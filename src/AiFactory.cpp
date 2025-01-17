@@ -56,6 +56,90 @@ AiObjectContext* AiFactory::createAiObjectContext(Player* player, PlayerbotAI* b
     return (it != contextCreators.end()) ? it->second(botAI) : new AiObjectContext(botAI);
 }
 
+void AiFactory::AddRandomBotLeaderStrategies(Engine* engine)
+{
+    if (!engine)
+        return;
+
+    engine->addStrategy("pvp", false);
+    engine->addStrategy("grind", false);
+
+    if (sPlayerbotAIConfig->enableNewRpgStrategy)
+    {
+        engine->addStrategy("new rpg", false);
+    }
+    else if (sPlayerbotAIConfig->autoDoQuests)
+    {
+        engine->addStrategy("rpg", false);
+    }
+    else
+    {
+        engine->addStrategy("move random", false);
+    }
+
+    if (sPlayerbotAIConfig->randomBotJoinBG)
+        engine->addStrategy("bg", false);
+
+    engine->ChangeStrategy(sPlayerbotAIConfig->randomBotNonCombatStrategies);
+}
+
+void AiFactory::AddRandomBotGroupMemberStrategies(Engine* engine, Player* master, PlayerbotAI* facade)
+{
+    if (!engine || !master || !facade)
+        return;
+
+    PlayerbotAI* masterBotAI = GET_PLAYERBOT_AI(master);
+    if (masterBotAI || sRandomPlayerbotMgr->IsRandomBot(master))
+    {
+        engine->addStrategy("pvp", false);
+        engine->ChangeStrategy(sPlayerbotAIConfig->randomBotNonCombatStrategies);
+    }
+    else
+    {
+        engine->addStrategy("pvp", false);
+        engine->ChangeStrategy(sPlayerbotAIConfig->nonCombatStrategies);
+    }
+}
+
+void AiFactory::ApplyBattlegroundStrategies(Player* player, Engine* engine)
+{
+    if (!player || !engine || !player->GetBattleground())
+        return;
+
+    engine->addStrategiesNoInit("nc", "chat", "default", "buff", "food", "mount", "pvp", "dps assist",
+                               "attack tagged", "emote", nullptr);
+                               
+    engine->removeStrategy("custom::say", false);
+    engine->removeStrategy("travel", false);
+    engine->removeStrategy("rpg", false);
+    engine->removeStrategy("grind", false);
+
+    BattlegroundTypeId bgType = player->GetBattlegroundTypeId();
+    if (bgType == BATTLEGROUND_RB)
+        bgType = player->GetBattleground()->GetBgTypeID(true);
+
+    static const std::unordered_map<BattlegroundTypeId, const char*> bgStrategies = {
+        {BATTLEGROUND_WS, "warsong"},
+        {BATTLEGROUND_AB, "arathi"},
+        {BATTLEGROUND_AV, "alterac"},
+        {BATTLEGROUND_EY, "eye"},
+        {BATTLEGROUND_IC, "isle"}
+    };
+
+    if ((bgType <= BATTLEGROUND_EY || bgType == BATTLEGROUND_IC) && !player->InArena())
+        engine->addStrategy("battleground", false);
+
+    auto it = bgStrategies.find(bgType);
+    if (it != bgStrategies.end())
+        engine->addStrategy(it->second, false);
+
+    if (player->InArena())
+    {
+        engine->addStrategy("arena", false);
+        engine->removeStrategy("mount", false);
+    }
+}
+
 uint8 AiFactory::GetPlayerSpecTab(Player* bot)
 {
     // Early exit for invalid input
