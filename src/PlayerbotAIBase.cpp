@@ -4,25 +4,37 @@
  */
 
 #include "PlayerbotAIBase.h"
-
 #include "Playerbots.h"
 
-PlayerbotAIBase::PlayerbotAIBase(bool isBotAI) : nextAICheckDelay(0), _isBotAI(isBotAI) {}
+PlayerbotAIBase::PlayerbotAIBase(bool isBotAI) 
+    : nextAICheckDelay(0)
+    , totalPmo(nullptr)
+    , _isBotAI(isBotAI)
+{
+}
 
 void PlayerbotAIBase::UpdateAI(uint32 elapsed, bool minimal)
 {
     if (totalPmo)
+    {
         totalPmo->finish();
+    }
 
     totalPmo = sPerformanceMonitor->start(PERF_MON_TOTAL, "PlayerbotAIBase::FullTick");
 
     if (nextAICheckDelay > elapsed)
+    {
         nextAICheckDelay -= elapsed;
+    }
     else
+    {
         nextAICheckDelay = 0;
+    }
 
     if (!CanUpdateAI())
+    {
         return;
+    }
 
     UpdateAIInternal(elapsed, minimal);
     YieldThread();
@@ -47,14 +59,25 @@ void PlayerbotAIBase::IncreaseNextCheckDelay(uint32 delay)
     //     LOG_DEBUG("playerbots",  "increase next check delay: {}", nextAICheckDelay);
 }
 
-bool PlayerbotAIBase::CanUpdateAI() { return nextAICheckDelay == 0; }
+bool PlayerbotAIBase::CanUpdateAI() const
+{
+    return nextAICheckDelay == 0;
+}
 
 void PlayerbotAIBase::YieldThread(uint32 delay)
 {
     if (nextAICheckDelay < delay)
+    {
         nextAICheckDelay = delay;
+    }
 }
 
-bool PlayerbotAIBase::IsActive() { return nextAICheckDelay < sPlayerbotAIConfig->maxWaitForMove; }
+bool PlayerbotAIBase::IsActive() const
+{
+    return nextAICheckDelay < sPlayerbotAIConfig->maxWaitForMove;
+}
 
-bool PlayerbotAIBase::IsBotAI() const { return _isBotAI; }
+bool PlayerbotAIBase::IsBotAI() const
+{
+    return _isBotAI;
+}
