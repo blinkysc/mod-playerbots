@@ -1611,22 +1611,27 @@ void PlayerbotsMgr::RemovePlayerBotData(ObjectGuid const& guid, bool is_AI)
     }
 }
 
+// Refactored version of PlayerbotsMgr::GetPlayerbotAI
 PlayerbotAI* PlayerbotsMgr::GetPlayerbotAI(Player* player)
 {
-    if (!(sPlayerbotAIConfig->enabled) || !player)
+    // Early exit if configuration is disabled or player is null
+    if (!sPlayerbotAIConfig->enabled || !player)
     {
         return nullptr;
     }
-    // if (player->GetSession()->isLogingOut() || player->IsDuringRemoveFromWorld()) {
-    //     return nullptr;
-    // }
-    auto itr = _playerbotsAIMap.find(player->GetGUID());
-    if (itr != _playerbotsAIMap.end())
+
+    // Find the player's AI in the map
+    auto botAIEntry = _playerbotsAIMap.find(player->GetGUID());
+    if (botAIEntry != _playerbotsAIMap.end())
     {
-        if (itr->second->IsBotAI())
-            return reinterpret_cast<PlayerbotAI*>(itr->second);
+        auto* botAI = botAIEntry->second;
+        if (botAI->IsBotAI())
+        {
+            return static_cast<PlayerbotAI*>(botAI); // Use static_cast for clarity
+        }
     }
 
+    // Return nullptr if no valid AI is found
     return nullptr;
 }
 
