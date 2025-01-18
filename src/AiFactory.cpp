@@ -219,60 +219,42 @@ BotRoles AiFactory::GetPlayerRoles(Player* player)
     if (!player)
         return BOT_ROLE_NONE;
 
-    // Define role mappings using nested map structure
-    // {class -> {spec tab -> role}}
-    static const std::unordered_map<uint8, std::unordered_map<uint8, BotRoles>> classRoles = {
-        { 
-            CLASS_PRIEST, {
-                {0, BOT_ROLE_HEALER},
-                {1, BOT_ROLE_HEALER},
-                {2, BOT_ROLE_DPS}
-            }
-        },
-        { 
-            CLASS_SHAMAN, {
-                {0, BOT_ROLE_DPS},
-                {1, BOT_ROLE_DPS},
-                {2, BOT_ROLE_HEALER}
-            }
-        },
-        { 
-            CLASS_WARRIOR, {
-                {0, BOT_ROLE_DPS},
-                {1, BOT_ROLE_DPS},
-                {2, BOT_ROLE_TANK}
-            }
-        },
-        { 
-            CLASS_PALADIN, {
-                {0, BOT_ROLE_HEALER},
-                {1, BOT_ROLE_TANK},
-                {2, BOT_ROLE_DPS}
-            }
-        },
-        { 
-            CLASS_DRUID, {
-                {0, BOT_ROLE_DPS},
-                {1, static_cast<BotRoles>(BOT_ROLE_TANK | BOT_ROLE_DPS)},
-                {2, BOT_ROLE_HEALER}
-            }
-        }
-    };
-
     uint8 playerClass = player->getClass();
     uint8 specTab = GetPlayerSpecTab(player);
 
-    // Find class in map
-    auto classIt = classRoles.find(playerClass);
-    if (classIt == classRoles.end())
-        return BOT_ROLE_DPS;  // Default role for unmapped classes
+    // Handle classes with simple role mappings using switch
+    switch (playerClass)
+    {
+        case CLASS_PRIEST:
+            return (specTab == 2) ? BOT_ROLE_DPS : BOT_ROLE_HEALER;
 
-    // Find spec tab in class roles
-    auto specIt = classIt->second.find(specTab);
-    if (specIt == classIt->second.end())
-        return BOT_ROLE_DPS;  // Default role for unmapped specs
+        case CLASS_SHAMAN:
+            return (specTab == 2) ? BOT_ROLE_HEALER : BOT_ROLE_DPS;
 
-    return specIt->second;
+        case CLASS_WARRIOR:
+            return (specTab == 2) ? BOT_ROLE_TANK : BOT_ROLE_DPS;
+
+        case CLASS_PALADIN:
+            switch (specTab)
+            {
+                case 0: return BOT_ROLE_HEALER;
+                case 1: return BOT_ROLE_TANK;
+                case 2: return BOT_ROLE_DPS;
+                default: return BOT_ROLE_DPS;
+            }
+
+        case CLASS_DRUID:
+            switch (specTab)
+            {
+                case 0: return BOT_ROLE_DPS;
+                case 1: return static_cast<BotRoles>(BOT_ROLE_TANK | BOT_ROLE_DPS);
+                case 2: return BOT_ROLE_HEALER;
+                default: return BOT_ROLE_DPS;
+            }
+
+        default:
+            return BOT_ROLE_DPS;  // Default role for unmapped classes
+    }
 }
 
 std::string AiFactory::GetPlayerSpecName(Player* player)
