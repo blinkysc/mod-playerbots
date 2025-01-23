@@ -4,6 +4,7 @@
  */
 
 #include "Trigger.h"
+
 #include "Event.h"
 #include "Playerbots.h"
 
