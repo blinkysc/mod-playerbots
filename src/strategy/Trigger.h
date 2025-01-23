@@ -8,57 +8,60 @@
 
 #include "Action.h"
 #include "Common.h"
+#include <memory>
+#include <string_view>
+#include <chrono>
 
 class PlayerbotAI;
 class Unit;
 
-class Trigger : public AiNamedObject
-{
+class Trigger : public AiNamedObject {
 public:
-    Trigger(PlayerbotAI* botAI, std::string const name = "trigger", int32 checkInterval = 1);
+    explicit Trigger(PlayerbotAI* botAI, std::string_view name = "trigger", std::chrono::milliseconds checkInterval = std::chrono::milliseconds(1));
+    virtual ~Trigger() = default;
 
-    virtual ~Trigger() {}
-
+    // Core functionality
     virtual Event Check();
-    virtual void ExternalEvent([[maybe_unused]] std::string const param, [[maybe_unused]] Player* owner = nullptr) {}
-    virtual void ExternalEvent([[maybe_unused]] WorldPacket& packet, [[maybe_unused]] Player* owner = nullptr) {}
     virtual bool IsActive() { return false; }
-    virtual NextAction** getHandlers() { return nullptr; }
-    void Update() {}
     virtual void Reset() {}
+    bool NeedsCheck() const;
+    void Update() {}
+
+    // Event handling
+    virtual void ExternalEvent(std::string_view param, Player* owner = nullptr) {}
+    virtual void ExternalEvent(WorldPacket& packet, Player* owner = nullptr) {}
+
+    // Target management
     virtual Unit* GetTarget();
     virtual Value<Unit*>* GetTargetValue();
-    virtual std::string const GetTargetName() { return "self target"; }
-
-    bool needCheck();
+    virtual std::string_view GetTargetName() const { return "self target"; }
+    virtual NextAction** GetHandlers() { return nullptr; }
 
 protected:
-    int32 checkInterval;
-    uint32 lastCheckTime;
+    const std::chrono::milliseconds checkInterval;
+    std::chrono::steady_clock::time_point lastCheckTime;
 };
 
-class TriggerNode
-{
+class TriggerNode {
 public:
-    TriggerNode(std::string const name, NextAction** handlers = nullptr)
-        : trigger(nullptr), handlers(handlers), name(name)
-    {
-    }  // reorder args - whipowill
+    explicit TriggerNode(std::string_view name, NextAction** handlers = nullptr);
+    ~TriggerNode();
 
-    virtual ~TriggerNode() { NextAction::destroy(handlers); }
+    // Disable copy operations
+    TriggerNode(const TriggerNode&) = delete;
+    TriggerNode& operator=(const TriggerNode&) = delete;
 
-    Trigger* getTrigger() { return trigger; }
-    void setTrigger(Trigger* trigger) { this->trigger = trigger; }
-    std::string const getName() { return name; }
-
-    NextAction** getHandlers() { return NextAction::merge(NextAction::clone(handlers), trigger->getHandlers()); }
-
-    float getFirstRelevance() { return handlers[0] ? handlers[0]->getRelevance() : -1; }
+    // Accessors
+    Trigger* GetTrigger() const { return trigger.get(); }
+    void SetTrigger(std::unique_ptr<Trigger> newTrigger) { trigger = std::move(newTrigger); }
+    std::string_view GetName() const { return name; }
+    NextAction** GetHandlers() const;
+    float GetFirstRelevance() const;
 
 private:
-    Trigger* trigger;
+    std::unique_ptr<Trigger> trigger;
     NextAction** handlers;
-    std::string const name;
+    const std::string name;
 };
 
 #endif
