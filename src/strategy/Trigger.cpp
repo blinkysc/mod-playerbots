@@ -4,45 +4,64 @@
  */
 
 #include "Trigger.h"
-
 #include "Event.h"
 #include "Playerbots.h"
-#include "Timer.h"
 
-Trigger::Trigger(PlayerbotAI* botAI, std::string const name, int32 checkInterval)
-    : AiNamedObject(botAI, name),
-      checkInterval(checkInterval == 1 ? 1 : (checkInterval < 100 ? checkInterval * 1000 : checkInterval)),
-      lastCheckTime(0)
+using namespace std::chrono;
+
+Trigger::Trigger(PlayerbotAI* botAI, std::string_view name, milliseconds interval)
+    : AiNamedObject(botAI, std::string(name)),
+      checkInterval(interval < milliseconds(100) ? interval * 1000 : interval),
+      lastCheckTime(steady_clock::now())
 {
 }
 
-Event Trigger::Check()
-{
-    if (IsActive())
-    {
-        Event event(getName());
-        return event;
+Event Trigger::Check() {
+    if (IsActive()) {
+        return Event(getName());
+    }
+    return Event();
+}
+
+Value<Unit*>* Trigger::GetTargetValue() {
+    return context->GetValue<Unit*>(std::string(GetTargetName()));
+}
+
+Unit* Trigger::GetTarget() {
+    if (Value<Unit*>* value = GetTargetValue()) {
+        return value->Get();
+    }
+    return nullptr;
+}
+
+bool Trigger::NeedsCheck() const {
+    if (checkInterval < milliseconds(2)) {
+        return true;
     }
 
-    Event event;
-    return event;
-}
-
-Value<Unit*>* Trigger::GetTargetValue() { return context->GetValue<Unit*>(GetTargetName()); }
-
-Unit* Trigger::GetTarget() { return GetTargetValue()->Get(); }
-
-bool Trigger::needCheck()
-{
-    if (checkInterval < 2)
-        return true;
-
-    uint32 now = getMSTime();
-    if (!lastCheckTime || now - lastCheckTime >= checkInterval)
-    {
+    auto now = steady_clock::now();
+    if (now - lastCheckTime >= checkInterval) {
         lastCheckTime = now;
         return true;
     }
-
     return false;
+}
+
+TriggerNode::TriggerNode(std::string_view name, NextAction** handlers)
+    : trigger(nullptr),
+      handlers(handlers),
+      name(std::string(name))
+{
+}
+
+TriggerNode::~TriggerNode() {
+    NextAction::destroy(handlers);
+}
+
+NextAction** TriggerNode::GetHandlers() const {
+    return NextAction::merge(NextAction::clone(handlers), trigger->GetHandlers());
+}
+
+float TriggerNode::GetFirstRelevance() const {
+    return handlers && handlers[0] ? handlers[0]->getRelevance() : -1.0f;
 }
