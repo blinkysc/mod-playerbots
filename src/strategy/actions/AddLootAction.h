@@ -13,30 +13,36 @@ class PlayerbotAI;
 
 class AddLootAction : public Action
 {
-public:
-    AddLootAction(PlayerbotAI* botAI) : Action(botAI, "add loot") {}
-    bool Execute(Event event) override;
-    bool isUseful() override;
+    public:
+        AddLootAction(PlayerbotAI* botAI) : Action(botAI, "add loot") {}
+        bool Execute(Event const& event) override;
+        bool isUseful() override { return true; }
 };
 
 class AddAllLootAction : public Action
 {
-public:
-    AddAllLootAction(PlayerbotAI* botAI, std::string const name = "add all loot") : Action(botAI, name) {}
-    bool Execute(Event event) override;
-    bool isUseful() override;
+    public:
+        AddAllLootAction(PlayerbotAI* botAI, std::string const& name = "add all loot") 
+            : Action(botAI, name) {}
+        bool Execute(Event const& event) override;
+        bool isUseful() override { return true; }
 
-protected:
-    virtual bool AddLoot(ObjectGuid guid);
+    protected:
+        virtual bool AddLoot(ObjectGuid const& guid)
+        {
+            return AI_VALUE(LootObjectStack*, "available loot")->Add(guid);
+        }
 };
 
 class AddGatheringLootAction : public AddAllLootAction
 {
-public:
-    AddGatheringLootAction(PlayerbotAI* botAI) : AddAllLootAction(botAI, "add gathering loot") {}
+    public:
+        AddGatheringLootAction(PlayerbotAI* botAI) 
+            : AddAllLootAction(botAI, "add gathering loot") {}
 
-protected:
-    bool AddLoot(ObjectGuid guid) override;
+    protected:
+        bool AddLoot(ObjectGuid const& guid) override;
+        bool HasNearbyEnemies() const;
 };
 
 #endif
