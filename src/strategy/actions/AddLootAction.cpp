@@ -4,7 +4,6 @@
  */
 
 #include "AddLootAction.h"
-
 #include "CellImpl.h"
 #include "Event.h"
 #include "GridNotifiers.h"
@@ -13,67 +12,78 @@
 #include "Playerbots.h"
 #include "ServerFacade.h"
 
-bool AddLootAction::Execute(Event event)
+bool AddLootAction::Execute(Event const& event)
 {
-    ObjectGuid guid = event.getObject();
-    if (!guid)
-        return false;
-
-    return AI_VALUE(LootObjectStack*, "available loot")->Add(guid);
+    if (ObjectGuid const& guid = event.getObject())
+    {
+        return AI_VALUE(LootObjectStack*, "available loot")->Add(guid);
+    }
+    return false;
 }
 
-bool AddAllLootAction::Execute(Event event)
+bool AddAllLootAction::Execute(Event const& /*event*/)
 {
     bool added = false;
+    
+    if (GuidVector const& gameObjects = context->GetValue<GuidVector>("nearest game objects")->Get(); !gameObjects.empty())
+    {
+        for (ObjectGuid const& guid : gameObjects)
+        {
+            added |= AddLoot(guid);
+        }
+    }
 
-    GuidVector gos = context->GetValue<GuidVector>("nearest game objects")->Get();
-    for (GuidVector::iterator i = gos.begin(); i != gos.end(); i++)
-        added |= AddLoot(*i);
-
-    GuidVector corpses = context->GetValue<GuidVector>("nearest corpses")->Get();
-    for (GuidVector::iterator i = corpses.begin(); i != corpses.end(); i++)
-        added |= AddLoot(*i);
+    if (GuidVector const& corpses = context->GetValue<GuidVector>("nearest corpses")->Get(); !corpses.empty())
+    {
+        for (ObjectGuid const& guid : corpses)
+        {
+            added |= AddLoot(guid);
+        }
+    }
 
     return added;
 }
 
-bool AddLootAction::isUseful() { return true; }
-
-bool AddAllLootAction::isUseful() { return true; }
-
-bool AddAllLootAction::AddLoot(ObjectGuid guid) { return AI_VALUE(LootObjectStack*, "available loot")->Add(guid); }
-
-bool AddGatheringLootAction::AddLoot(ObjectGuid guid)
+bool AddGatheringLootAction::AddLoot(ObjectGuid const& guid)
 {
     LootObject loot(bot, guid);
-
-    WorldObject* wo = loot.GetWorldObject(bot);
-    if (loot.IsEmpty() || !wo)
-        return false;
-
-    if (!bot->IsWithinLOSInMap(wo))
-        return false;
-
-    if (loot.skillId == SKILL_NONE)
-        return false;
-
-    if (!loot.IsLootPossible(bot))
-        return false;
-
-    if (sServerFacade->IsDistanceGreaterThan(sServerFacade->GetDistance2d(bot, wo), INTERACTION_DISTANCE))
+    
+    WorldObject* worldObj = loot.GetWorldObject(bot);
+    if (loot.IsEmpty() || !worldObj || !bot->IsWithinLOSInMap(worldObj))
     {
-        std::list<Unit*> targets;
-        Acore::AnyUnfriendlyUnitInObjectRangeCheck u_check(bot, bot, sPlayerbotAIConfig->lootDistance);
-        Acore::UnitListSearcher<Acore::AnyUnfriendlyUnitInObjectRangeCheck> searcher(bot, targets, u_check);
-        Cell::VisitAllObjects(bot, searcher, sPlayerbotAIConfig->lootDistance * 1.5f);
-        if (!targets.empty())
+        return false;
+    }
+
+    if (loot.skillId == SKILL_NONE || !loot.IsLootPossible(bot))
+    {
+        return false;
+    }
+
+    if (sServerFacade->IsDistanceGreaterThan(sServerFacade->GetDistance2d(bot, worldObj), INTERACTION_DISTANCE))
+    {
+        if (HasNearbyEnemies())
         {
-            std::ostringstream out;
-            out << "Kill that " << targets.front()->GetName() << " so I can loot freely";
-            botAI->TellError(out.str());
             return false;
         }
     }
 
     return AddAllLootAction::AddLoot(guid);
+}
+
+bool AddGatheringLootAction::HasNearbyEnemies() const
+{
+    std::list<Unit*> targets;
+    Acore::AnyUnfriendlyUnitInObjectRangeCheck unitCheck(bot, bot, sPlayerbotAIConfig->lootDistance);
+    Acore::UnitListSearcher<Acore::AnyUnfriendlyUnitInObjectRangeCheck> searcher(bot, targets, unitCheck);
+    Cell::VisitAllObjects(bot, searcher, sPlayerbotAIConfig->lootDistance * 1.5f);
+
+    if (!targets.empty())
+    {
+        std::ostringstream out;
+        out << "Kill that " << targets.front()->GetName() << " so I can loot freely";
+        botAI->TellError(out.str());
+        return true;
+    }
+
+    return false;
 }
