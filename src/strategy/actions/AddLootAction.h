@@ -3,6 +3,11 @@
  * and/or modify it under version 2 of the License, or (at your option), any later version.
  */
 
+/**
+ * @file AddLootAction.h
+ * Defines actions for collecting loot in the playerbot system
+ */
+
 #ifndef _PLAYERBOT_ADDLOOTACTION_H
 #define _PLAYERBOT_ADDLOOTACTION_H
 
@@ -11,6 +16,9 @@
 class ObjectGuid;
 class PlayerbotAI;
 
+/**
+ * @brief Action for adding a single loot object
+ */
 class AddLootAction : public Action
 {
     public:
@@ -19,6 +27,9 @@ class AddLootAction : public Action
         bool isUseful() override { return true; }
 };
 
+/**
+ * @brief Action for adding all nearby lootable objects
+ */
 class AddAllLootAction : public Action
 {
     public:
@@ -28,12 +39,20 @@ class AddAllLootAction : public Action
         bool isUseful() override { return true; }
 
     protected:
+        /**
+         * @brief Adds a specific object to loot stack
+         * @param guid Object to be looted
+         * @return true if successfully added
+         */
         virtual bool AddLoot(ObjectGuid const& guid)
         {
             return AI_VALUE(LootObjectStack*, "available loot")->Add(guid);
         }
 };
 
+/**
+ * @brief Specialized action for gathering profession resources
+ */
 class AddGatheringLootAction : public AddAllLootAction
 {
     public:
