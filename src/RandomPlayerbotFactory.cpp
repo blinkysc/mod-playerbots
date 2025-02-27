@@ -448,20 +448,25 @@ void RandomPlayerbotFactory::CreateRandomBots()
 
         LOG_INFO("playerbots", "Deleting all random bot characters and accounts...");
     
+        // Get database names from configuration
+        std::string authDbName = sPlayerbotAIConfig->GetStringDefault("DatabaseInfo.Auth.Name", "auth");
+        std::string charactersDbName = sPlayerbotAIConfig->GetStringDefault("DatabaseInfo.Character.Name", "characters");
+        
         // First execute all the cleanup SQL commands
         // Clear playerbots_random_bots table
         PlayerbotsDatabase.Execute("DELETE FROM playerbots_random_bots");
     
         // Delete all characters from bot accounts
-        CharacterDatabase.Execute("DELETE FROM characters WHERE account IN (SELECT id FROM acore_auth.account WHERE username LIKE '{}%%')", 
-                             sPlayerbotAIConfig->randomBotAccountPrefix.c_str());
+        CharacterDatabase.Execute("DELETE FROM characters WHERE account IN (SELECT id FROM {}.account WHERE username LIKE '{}%%')", 
+                             authDbName.c_str(), sPlayerbotAIConfig->randomBotAccountPrefix.c_str());
 
         // Clean up orphaned entries in playerbots_guild_tasks
-        PlayerbotsDatabase.Execute("DELETE FROM playerbots_guild_tasks WHERE owner NOT IN (SELECT guid FROM acore_characters.characters)");
+        PlayerbotsDatabase.Execute("DELETE FROM playerbots_guild_tasks WHERE owner NOT IN (SELECT guid FROM {}.characters)", 
+                               charactersDbName.c_str());
 
         // Clean up orphaned entries in playerbots_db_store
-        PlayerbotsDatabase.Execute("DELETE FROM playerbots_db_store WHERE guid NOT IN (SELECT guid FROM acore_characters.characters WHERE account IN (SELECT id FROM acore_auth.account WHERE username NOT LIKE '{}%%'))", 
-                               sPlayerbotAIConfig->randomBotAccountPrefix.c_str());
+        PlayerbotsDatabase.Execute("DELETE FROM playerbots_db_store WHERE guid NOT IN (SELECT guid FROM {}.characters WHERE account IN (SELECT id FROM {}.account WHERE username NOT LIKE '{}%%'))", 
+                               charactersDbName.c_str(), authDbName.c_str(), sPlayerbotAIConfig->randomBotAccountPrefix.c_str());
         
         // Clean up orphaned records in character-related tables
         CharacterDatabase.Execute("DELETE FROM arena_team_member WHERE guid NOT IN (SELECT guid FROM characters)");
