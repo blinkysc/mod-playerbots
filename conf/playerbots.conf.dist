@@ -1456,6 +1456,16 @@ Playerbots.Updates.EnableDatabases = 1
 # Command server port, 0 - disabled
 AiPlayerbot.CommandServerPort = 8888
 
+#        Description: The name of the auth database.
+#        Default:     "acore_auth"
+
+AiPlayerbot.AuthDatabaseName = "acore_auth"
+
+#        Description: The name of the character database.
+#        Default:     "acore_characters"
+
+AiPlayerbot.CharacterDatabaseName = "acore_characters"
+
 #
 #
 #
