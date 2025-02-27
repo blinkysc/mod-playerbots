@@ -4400,6 +4400,105 @@ bool BGTactics::protectFC()
     if (!bg)
         return false;
 
+    // Check if bot is carrying flag
+    bool isFlagCarrier = bot->HasAura(BG_WS_SPELL_WARSONG_FLAG) || 
+                         bot->HasAura(BG_WS_SPELL_SILVERWING_FLAG) || 
+                         bot->HasAura(BG_EY_NETHERSTORM_FLAG_SPELL);
+
+    // Self-defense logic when bot is carrying flag and is attacked
+    if (isFlagCarrier && bot->IsInCombat())
+    {
+        Unit* attacker = AI_VALUE(Unit*, "enemy player target");
+        if (attacker && attacker->IsAlive())
+        {
+            // Continue trying to return the flag while fighting
+            BattlegroundTypeId bgType = bg->GetBgTypeID();
+            if (bgType == BATTLEGROUND_RB)
+                bgType = bg->GetBgTypeID(true);
+            
+            PositionInfo pos = context->GetValue<PositionMap&>("position")->Get()["bg objective"];
+            
+            // If we don't have a return point set, choose it based on battleground
+            if (!pos.isSet())
+            {
+                if (bgType == BATTLEGROUND_WS)
+                {
+                    // Set objective to return point
+                    if (bot->GetTeamId() == TEAM_ALLIANCE)
+                        pos.Set(WS_FLAG_POS_ALLIANCE.GetPositionX(), WS_FLAG_POS_ALLIANCE.GetPositionY(), 
+                                WS_FLAG_POS_ALLIANCE.GetPositionZ(), bot->GetMapId());
+                    else
+                        pos.Set(WS_FLAG_POS_HORDE.GetPositionX(), WS_FLAG_POS_HORDE.GetPositionY(), 
+                                WS_FLAG_POS_HORDE.GetPositionZ(), bot->GetMapId());
+                }
+                else if (bgType == BATTLEGROUND_EY)
+                {
+                    // In EY, find the closest friendly node to return to
+                    BattlegroundEY* eyeOfTheStormBG = (BattlegroundEY*)bg;
+                    TeamId botTeam = bot->GetTeamId();
+                    
+                    float closestDist = FLT_MAX;
+                    Position closestPos;
+                    bool foundBase = false;
+                    
+                    for (const auto& objective : EY_AttackObjectives)
+                    {
+                        if (eyeOfTheStormBG->GetCapturePointInfo(std::get<0>(objective))._ownerTeamId == botTeam)
+                        {
+                            if (GameObject* go = bg->GetBGObject(std::get<1>(objective)))
+                            {
+                                float dist = bot->GetDistance(go);
+                                if (dist < closestDist)
+                                {
+                                    closestDist = dist;
+                                    closestPos.Relocate(go->GetPositionX(), go->GetPositionY(), go->GetPositionZ());
+                                    foundBase = true;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (foundBase)
+                        pos.Set(closestPos.GetPositionX(), closestPos.GetPositionY(), closestPos.GetPositionZ(), bot->GetMapId());
+                }
+                
+                if (pos.isSet())
+                    context->GetValue<PositionMap&>("position")->Get()["bg objective"] = pos;
+            }
+            
+            // Set the attacker as the current target so combat AI will handle it while moving
+            context->GetValue<Unit*>("current target")->Set(attacker);
+            
+            // Prioritize movement toward flag capture point if we have a position
+            if (pos.isSet() && bot->GetDistance(pos.x, pos.y, pos.z) > 10.0f)
+            {
+                // Calculate a path that moves toward the objective while staying away from the attacker
+                float directAngle = bot->GetAngle(pos.x, pos.y);
+                float attackerAngle = bot->GetAngle(attacker);
+                float moveAngle = directAngle;
+                
+                // Try to move in a direction that isn't toward the attacker but still progresses to objective
+                float angleDiff = fabs(directAngle - attackerAngle);
+                if (angleDiff < M_PI/4) // If attacker is in our path
+                {
+                    // Adjust angle to go around attacker
+                    moveAngle = directAngle + (angleDiff < M_PI/8 ? M_PI/4 : M_PI/8);
+                }
+                
+                // Calculate move position
+                float distance = std::min(20.0f, bot->GetDistance(pos.x, pos.y, pos.z) * 0.5f);
+                float x = bot->GetPositionX() + distance * cos(moveAngle);
+                float y = bot->GetPositionY() + distance * sin(moveAngle);
+                float z = bot->GetPositionZ();
+                
+                return MoveTo(bot->GetMapId(), x, y, z);
+            }
+            
+            return true; // Return true to indicate we're handling the situation
+        }
+    }
+
+    // Original protectFC logic for protecting other flag carriers
     Unit* teamFC = AI_VALUE(Unit*, "team flag carrier");
 
     if (!teamFC || teamFC == bot)
