@@ -449,8 +449,8 @@ void RandomPlayerbotFactory::CreateRandomBots()
         LOG_INFO("playerbots", "Deleting all random bot characters and accounts...");
     
         // Get database names from configuration
-        std::string authDbName = sPlayerbotAIConfig->GetStringDefault("DatabaseInfo.Auth.Name", "auth");
-        std::string charactersDbName = sPlayerbotAIConfig->GetStringDefault("DatabaseInfo.Character.Name", "characters");
+        std::string authDbName = sPlayerbotAIConfig->AuthDatabaseName.c_str());
+        std::string charactersDbName = sPlayerbotAIConfig->CharacterDatabaseName.c_str());
         
         // First execute all the cleanup SQL commands
         // Clear playerbots_random_bots table
