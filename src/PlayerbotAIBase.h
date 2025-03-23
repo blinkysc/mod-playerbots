@@ -8,6 +8,7 @@
 
 #include "Define.h"
 #include "PlayerbotAIConfig.h"
+#include <atomic>
 
 class PlayerbotAIBase
 {
@@ -24,7 +25,7 @@ public:
     bool IsBotAI() const;
 
 protected:
-    uint32 nextAICheckDelay;
+    std::atomic<uint32> nextAICheckDelay;
     class PerformanceMonitorOperation* totalPmo = nullptr;
 
 private:
