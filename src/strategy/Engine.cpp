@@ -5,6 +5,9 @@
 
 #include "Engine.h"
 
+#include <mutex>
+#include <shared_mutex>
+
 #include "Action.h"
 #include "Event.h"
 #include "PerformanceMonitor.h"
@@ -13,6 +16,7 @@
 #include "Strategy.h"
 
 Engine::Engine(PlayerbotAI* botAI, AiObjectContext* factory) : PlayerbotAIAware(botAI), aiObjectContext(factory)
+
 {
     lastRelevance = 0.0f;
     testMode = false;
