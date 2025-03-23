@@ -229,6 +229,11 @@ PlayerbotAI::~PlayerbotAI()
         sPlayerbotsMgr->RemovePlayerBotData(bot->GetGUID(), true);
 }
 
+void PlayerbotAI::SetNextCheckDelay(uint32 delay)
+{
+    nextAICheckDelay.store(delay, std::memory_order_relaxed);
+}
+
 void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
 {
     // Handle the AI check delay
@@ -1978,6 +1983,2119 @@ bool PlayerbotAI::IsTank(Player* player, bool bySpec)
         return botAi->ContainsStrategy(STRATEGY_TYPE_TANK);
 
     int tab = AiFactory::GetPlayerSpecTab(player);
+    switch (player->getClass())
+    {
+        case CLASS_DEATH_KNIGHT:
+            if (tab == DEATHKNIGHT_TAB_BLOOD)
+            {
+                return true;
+            }
+            break;
+        case CLASS_PALADIN:
+            if (tab == PALADIN_TAB_PROTECTION)
+            {
+                return true;
+            }
+            break;
+        case CLASS_WARRIOR:
+            if (tab == WARRIOR_TAB_PROTECTION)
+            {
+                return true;
+            }
+            break;
+        case CLASS_DRUID:
+            if (tab == DRUID_TAB_FERAL && (player->GetShapeshiftForm() == FORM_BEAR ||
+                                           player->GetShapeshiftForm() == FORM_DIREBEAR || player->HasAura(16931)))
+            {
+                return true;
+            }
+            break;
+    }
+    return false;
+}
+
+bool PlayerbotAI::IsHeal(Player* player, bool bySpec)
+{
+    PlayerbotAI* botAi = GET_PLAYERBOT_AI(player);
+    if (!bySpec && botAi)
+        return botAi->ContainsStrategy(STRATEGY_TYPE_HEAL);
+
+    int tab = AiFactory::GetPlayerSpecTab(player);
+    switch (player->getClass())
+    {
+        case CLASS_PRIEST:
+            if (tab == PRIEST_TAB_DISIPLINE || tab == PRIEST_TAB_HOLY)
+            {
+                return true;
+            }
+            break;
+        case CLASS_DRUID:
+            if (tab == DRUID_TAB_RESTORATION)
+            {
+                return true;
+            }
+            break;
+        case CLASS_SHAMAN:
+            if (tab == SHAMAN_TAB_RESTORATION)
+            {
+                return true;
+            }
+            break;
+        case CLASS_PALADIN:
+            if (tab == PALADIN_TAB_HOLY)
+            {
+                return true;
+            }
+            break;
+    }
+    return false;
+}
+
+bool PlayerbotAI::IsDps(Player* player, bool bySpec)
+{
+    PlayerbotAI* botAi = GET_PLAYERBOT_AI(player);
+    if (!bySpec && botAi)
+        return botAi->ContainsStrategy(STRATEGY_TYPE_DPS);
+
+    int tab = AiFactory::GetPlayerSpecTab(player);
+    switch (player->getClass())
+    {
+        case CLASS_MAGE:
+        case CLASS_WARLOCK:
+        case CLASS_HUNTER:
+        case CLASS_ROGUE:
+            return true;
+        case CLASS_PRIEST:
+            if (tab == PRIEST_TAB_SHADOW)
+            {
+                return true;
+            }
+            break;
+        case CLASS_DRUID:
+            if (tab == DRUID_TAB_BALANCE)
+            {
+                return true;
+            }
+            if (tab == DRUID_TAB_FERAL && !IsTank(player, bySpec))
+            {
+                return true;
+            }
+            break;
+        case CLASS_SHAMAN:
+            if (tab != SHAMAN_TAB_RESTORATION)
+            {
+                return true;
+            }
+            break;
+        case CLASS_PALADIN:
+            if (tab == PALADIN_TAB_RETRIBUTION)
+            {
+                return true;
+            }
+            break;
+        case CLASS_DEATH_KNIGHT:
+            if (tab != DEATHKNIGHT_TAB_BLOOD)
+            {
+                return true;
+            }
+            break;
+        case CLASS_WARRIOR:
+            if (tab != WARRIOR_TAB_PROTECTION)
+            {
+                return true;
+            }
+            break;
+    }
+    return false;
+}
+
+bool PlayerbotAI::IsMainTank(Player* player)
+{
+    Group* group = player->GetGroup();
+    if (!group)
+    {
+        return IsTank(player);
+    }
+
+    ObjectGuid mainTank = ObjectGuid();
+    Group::MemberSlotList const& slots = group->GetMemberSlots();
+
+    for (Group::member_citerator itr = slots.begin(); itr != slots.end(); ++itr)
+    {
+        if (itr->flags & MEMBER_FLAG_MAINTANK)
+        {
+            mainTank = itr->guid;
+            break;
+        }
+    }
+    if (mainTank != ObjectGuid::Empty)
+    {
+        return player->GetGUID() == mainTank;
+    }
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+        if (IsTank(member) && member->IsAlive())
+        {
+            return player->GetGUID() == member->GetGUID();
+        }
+    }
+    return false;
+}
+
+uint32 PlayerbotAI::GetGroupTankNum(Player* player)
+{
+    Group* group = player->GetGroup();
+    if (!group)
+    {
+        return 0;
+    }
+    uint32 result = 0;
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+        if (IsTank(member) && member->IsAlive())
+        {
+            result++;
+        }
+    }
+    return result;
+}
+
+bool PlayerbotAI::IsAssistTank(Player* player) { return IsTank(player) && !IsMainTank(player); }
+
+bool PlayerbotAI::IsAssistTankOfIndex(Player* player, int index)
+{
+    Group* group = bot->GetGroup();
+    if (!group)
+    {
+        return false;
+    }
+    int counter = 0;
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+        if (group->IsAssistant(member->GetGUID()) && IsAssistTank(member))
+        {
+            if (index == counter)
+            {
+                return player == member;
+            }
+            counter++;
+        }
+    }
+    // not enough
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+        if (!group->IsAssistant(member->GetGUID()) && IsAssistTank(member))
+        {
+            if (index == counter)
+            {
+                return player == member;
+            }
+            counter++;
+        }
+    }
+    return false;
+}
+
+namespace acore
+{
+class UnitByGuidInRangeCheck
+{
+public:
+    UnitByGuidInRangeCheck(WorldObject const* obj, ObjectGuid guid, float range)
+        : i_obj(obj), i_range(range), i_guid(guid)
+    {
+    }
+    WorldObject const& GetFocusObject() const { return *i_obj; }
+    bool operator()(Unit* u) { return u->GetGUID() == i_guid && i_obj->IsWithinDistInMap(u, i_range); }
+
+private:
+    WorldObject const* i_obj;
+    float i_range;
+    ObjectGuid i_guid;
+};
+
+class GameObjectByGuidInRangeCheck
+{
+public:
+    GameObjectByGuidInRangeCheck(WorldObject const* obj, ObjectGuid guid, float range)
+        : i_obj(obj), i_range(range), i_guid(guid)
+    {
+    }
+    WorldObject const& GetFocusObject() const { return *i_obj; }
+    bool operator()(GameObject* u)
+    {
+        if (u && i_obj->IsWithinDistInMap(u, i_range) && u->isSpawned() && u->GetGOInfo() && u->GetGUID() == i_guid)
+            return true;
+
+        return false;
+    }
+
+private:
+    WorldObject const* i_obj;
+    float i_range;
+    ObjectGuid i_guid;
+};
+};  // namespace acore
+
+Unit* PlayerbotAI::GetUnit(ObjectGuid guid)
+{
+    if (!guid)
+        return nullptr;
+
+    return ObjectAccessor::GetUnit(*bot, guid);
+}
+
+Player* PlayerbotAI::GetPlayer(ObjectGuid guid)
+{
+    Unit* unit = GetUnit(guid);
+    return unit ? unit->ToPlayer() : nullptr;
+}
+
+uint32 GetCreatureIdForCreatureTemplateId(uint32 creatureTemplateId)
+{
+    QueryResult results =
+        WorldDatabase.Query("SELECT guid FROM `creature` WHERE id1 = {} LIMIT 1;", creatureTemplateId);
+    if (results)
+    {
+        Field* fields = results->Fetch();
+        return fields[0].Get<uint32>();
+    }
+    return 0;
+}
+
+Unit* PlayerbotAI::GetUnit(CreatureData const* creatureData)
+{
+    if (!creatureData)
+        return nullptr;
+
+    Map* map = sMapMgr->FindMap(creatureData->mapid, 0);
+    if (!map)
+        return nullptr;
+
+    uint32 spawnId = creatureData->spawnId;
+    if (!spawnId)  // workaround for CreatureData with missing spawnId (this just uses first matching creatureId in DB,
+                   // but thats ok this method is only used for battlemasters and theres only 1 of each type)
+        spawnId = GetCreatureIdForCreatureTemplateId(creatureData->id1);
+    auto creatureBounds = map->GetCreatureBySpawnIdStore().equal_range(spawnId);
+    if (creatureBounds.first == creatureBounds.second)
+        return nullptr;
+
+    return creatureBounds.first->second;
+}
+
+Creature* PlayerbotAI::GetCreature(ObjectGuid guid)
+{
+    if (!guid)
+        return nullptr;
+
+    return ObjectAccessor::GetCreature(*bot, guid);
+}
+
+GameObject* PlayerbotAI::GetGameObject(ObjectGuid guid)
+{
+    if (!guid)
+        return nullptr;
+
+    return ObjectAccessor::GetGameObject(*bot, guid);
+}
+
+// GameObject* PlayerbotAI::GetGameObject(GameObjectData const* gameObjectData)
+// {
+//     if (!gameObjectData)
+//         return nullptr;
+
+//     Map* map = sMapMgr->FindMap(gameObjectData->mapid, 0);
+//     if (!map)
+//         return nullptr;
+
+//     auto gameobjectBounds = map->GetGameObjectBySpawnIdStore().equal_range(gameObjectData->spawnId);
+//     if (gameobjectBounds.first == gameobjectBounds.second)
+//         return nullptr;
+
+//     return gameobjectBounds.first->second;
+// }
+
+WorldObject* PlayerbotAI::GetWorldObject(ObjectGuid guid)
+{
+    if (!guid)
+        return nullptr;
+
+    return ObjectAccessor::GetWorldObject(*bot, guid);
+}
+
+const AreaTableEntry* PlayerbotAI::GetCurrentArea()
+{
+    return sAreaTableStore.LookupEntry(
+        bot->GetMap()->GetAreaId(bot->GetPhaseMask(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ()));
+}
+
+const AreaTableEntry* PlayerbotAI::GetCurrentZone()
+{
+    return sAreaTableStore.LookupEntry(
+        bot->GetMap()->GetZoneId(bot->GetPhaseMask(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ()));
+}
+
+std::string PlayerbotAI::GetLocalizedAreaName(const AreaTableEntry* entry)
+{
+    std::string name;
+    if (entry)
+    {
+        name = entry->area_name[sWorld->GetDefaultDbcLocale()];
+        if (name.empty())
+            name = entry->area_name[LOCALE_enUS];
+    }
+
+    return name;
+}
+
+std::string PlayerbotAI::GetLocalizedCreatureName(uint32 entry)
+{
+    std::string name;
+    const CreatureLocale* cl = sObjectMgr->GetCreatureLocale(entry);
+    if (cl)
+        ObjectMgr::GetLocaleString(cl->Name, sWorld->GetDefaultDbcLocale(), name);
+    if (name.empty())
+    {
+        CreatureTemplate const* ct = sObjectMgr->GetCreatureTemplate(entry);
+        if (ct)
+            name = ct->Name;
+    }
+    return name;
+}
+
+
+std::string PlayerbotAI::GetLocalizedGameObjectName(uint32 entry)
+{
+    std::string name;
+    const GameObjectLocale* gl = sObjectMgr->GetGameObjectLocale(entry);
+    if (gl)
+        ObjectMgr::GetLocaleString(gl->Name, sWorld->GetDefaultDbcLocale(), name);
+    if (name.empty())
+    {
+        GameObjectTemplate const* gt = sObjectMgr->GetGameObjectTemplate(entry);
+        if (gt)
+            name = gt->name;
+    }
+    return name;
+}
+
+std::vector<Player*> PlayerbotAI::GetPlayersInGroup()
+{
+    std::vector<Player*> members;
+
+    Group* group = bot->GetGroup();
+
+    if (!group)
+        return members;
+
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+
+        if (GET_PLAYERBOT_AI(member) && !GET_PLAYERBOT_AI(member)->IsRealPlayer())
+            continue;
+
+        members.push_back(ref->GetSource());
+    }
+
+    return members;
+}
+
+bool PlayerbotAI::SayToGuild(const std::string& msg)
+{
+    if (msg.empty())
+    {
+        return false;
+    }
+
+    if (bot->GetGuildId())
+    {
+        if (Guild* guild = sGuildMgr->GetGuildById(bot->GetGuildId()))
+        {
+            if (!guild->HasRankRight(bot, GR_RIGHT_GCHATSPEAK))
+            {
+                return false;
+            }
+            guild->BroadcastToGuild(bot->GetSession(), false, msg.c_str(), LANG_UNIVERSAL);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool PlayerbotAI::SayToWorld(const std::string& msg)
+{
+    if (msg.empty())
+    {
+        return false;
+    }
+
+    ChannelMgr* cMgr = ChannelMgr::forTeam(bot->GetTeamId());
+    if (!cMgr)
+        return false;
+
+    // no zone
+    if (Channel* worldChannel = cMgr->GetChannel("World", bot))
+    {
+        worldChannel->Say(bot->GetGUID(), msg.c_str(), LANG_UNIVERSAL);
+        return true;
+    }
+
+    return false;
+}
+
+bool PlayerbotAI::SayToChannel(const std::string& msg, const ChatChannelId& chanId)
+{
+    // Checks whether the message or ChannelMgr is valid
+    if (msg.empty())
+        return false;
+
+    ChannelMgr* cMgr = ChannelMgr::forTeam(bot->GetTeamId());
+    if (!cMgr)
+        return false;
+
+    AreaTableEntry const* current_zone = GetCurrentZone();
+    if (!current_zone)
+        return false;
+
+    const auto current_str_zone = GetLocalizedAreaName(current_zone);
+
+    std::mutex socialMutex;
+    std::lock_guard<std::mutex> lock(socialMutex);  // Blocking for thread safety when accessing SocialMgr
+
+    for (auto const& [key, channel] : cMgr->GetChannels())
+    {
+        // Checks if the channel pointer is valid
+        if (!channel)
+            continue;
+
+        // Checks if the channel matches the specified ChatChannelId
+        if (channel->GetChannelId() == chanId)
+        {
+            // If the channel name is empty, skip it to avoid access problems
+            if (channel->GetName().empty())
+                continue;
+
+            // Checks if the channel name contains the current zone
+            const auto does_contains = channel->GetName().find(current_str_zone) != std::string::npos;
+            if (chanId != ChatChannelId::LOOKING_FOR_GROUP && chanId != ChatChannelId::WORLD_DEFENSE && !does_contains)
+            {
+                continue;
+            }
+            else if (chanId == ChatChannelId::LOOKING_FOR_GROUP || chanId == ChatChannelId::WORLD_DEFENSE)
+            {
+                // Here you can add the capital check if necessary
+            }
+
+            // Final check to ensure the channel is correct before trying to say something
+            if (channel)
+            {
+                channel->Say(bot->GetGUID(), msg.c_str(), LANG_UNIVERSAL);
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool PlayerbotAI::SayToParty(const std::string& msg)
+{
+    if (!bot->GetGroup())
+        return false;
+
+    WorldPacket data;
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_PARTY, msg.c_str(), LANG_UNIVERSAL, CHAT_TAG_NONE, bot->GetGUID(),
+                                 bot->GetName());
+
+    for (auto reciever : GetPlayersInGroup())
+    {
+        sServerFacade->SendPacket(reciever, &data);
+    }
+
+    return true;
+}
+
+bool PlayerbotAI::SayToRaid(const std::string& msg)
+{
+    if (!bot->GetGroup() || bot->GetGroup()->isRaidGroup())
+        return false;
+
+    WorldPacket data;
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_RAID, msg.c_str(), LANG_UNIVERSAL, CHAT_TAG_NONE, bot->GetGUID(),
+                                 bot->GetName());
+
+    for (auto reciever : GetPlayersInGroup())
+    {
+        sServerFacade->SendPacket(reciever, &data);
+    }
+
+    return true;
+}
+
+bool PlayerbotAI::Yell(const std::string& msg)
+{
+    if (bot->GetTeamId() == TeamId::TEAM_ALLIANCE)
+    {
+        bot->Yell(msg, LANG_COMMON);
+    }
+    else
+    {
+        bot->Yell(msg, LANG_ORCISH);
+    }
+
+    return true;
+}
+
+bool PlayerbotAI::Say(const std::string& msg)
+{
+    if (bot->GetTeamId() == TeamId::TEAM_ALLIANCE)
+    {
+        bot->Say(msg, LANG_COMMON);
+    }
+    else
+    {
+        bot->Say(msg, LANG_ORCISH);
+    }
+
+    return true;
+}
+
+bool PlayerbotAI::Whisper(const std::string& msg, const std::string& receiverName)
+{
+    const auto receiver = ObjectAccessor::FindPlayerByName(receiverName);
+    if (!receiver)
+    {
+        return false;
+    }
+
+    if (bot->GetTeamId() == TeamId::TEAM_ALLIANCE)
+    {
+        bot->Whisper(msg, LANG_COMMON, receiver);
+    }
+    else
+    {
+        bot->Whisper(msg, LANG_ORCISH, receiver);
+    }
+
+    return true;
+}
+
+bool PlayerbotAI::TellMasterNoFacing(std::ostringstream& stream, PlayerbotSecurityLevel securityLevel)
+{
+    return TellMasterNoFacing(stream.str(), securityLevel);
+}
+
+bool PlayerbotAI::TellMasterNoFacing(std::string const text, PlayerbotSecurityLevel securityLevel)
+{
+    Player* master = GetMaster();
+    PlayerbotAI* masterBotAI = nullptr;
+    if (master)
+        masterBotAI = GET_PLAYERBOT_AI(master);
+
+    if ((!master || (masterBotAI && !masterBotAI->IsRealPlayer())) &&
+        (sPlayerbotAIConfig->randomBotSayWithoutMaster || HasStrategy("debug", BOT_STATE_NON_COMBAT)))
+    {
+        bot->Say(text, (bot->GetTeamId() == TEAM_ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+        return true;
+    }
+
+    if (!IsTellAllowed(securityLevel))
+        return false;
+
+    time_t lastSaid = whispers[text];
+
+    if (!lastSaid || (time(nullptr) - lastSaid) >= sPlayerbotAIConfig->repeatDelay / 1000)
+    {
+        whispers[text] = time(nullptr);
+
+        ChatMsg type = CHAT_MSG_WHISPER;
+        if (currentChat.second - time(nullptr) >= 1)
+            type = currentChat.first;
+
+        WorldPacket data;
+        ChatHandler::BuildChatPacket(data, type == CHAT_MSG_ADDON ? CHAT_MSG_PARTY : type,
+                                     type == CHAT_MSG_ADDON ? LANG_ADDON : LANG_UNIVERSAL, bot, nullptr, text.c_str());
+        master->SendDirectMessage(&data);
+    }
+
+    return true;
+}
+
+bool PlayerbotAI::TellError(std::string const text, PlayerbotSecurityLevel securityLevel)
+{
+    Player* master = GetMaster();
+    if (!IsTellAllowed(securityLevel) || !master || GET_PLAYERBOT_AI(master))
+        return false;
+
+    if (PlayerbotMgr* mgr = GET_PLAYERBOT_MGR(master))
+        mgr->TellError(bot->GetName(), text);
+
+    return false;
+}
+
+bool PlayerbotAI::IsTellAllowed(PlayerbotSecurityLevel securityLevel)
+{
+    Player* master = GetMaster();
+    if (!master || master->IsBeingTeleported())
+        return false;
+
+    if (!GetSecurity()->CheckLevelFor(securityLevel, true, master))
+        return false;
+
+    if (sPlayerbotAIConfig->whisperDistance && !bot->GetGroup() && sRandomPlayerbotMgr->IsRandomBot(bot) &&
+        master->GetSession()->GetSecurity() < SEC_GAMEMASTER &&
+        (bot->GetMapId() != master->GetMapId() ||
+         sServerFacade->GetDistance2d(bot, master) > sPlayerbotAIConfig->whisperDistance))
+        return false;
+
+    return true;
+}
+
+bool PlayerbotAI::TellMaster(std::ostringstream& stream, PlayerbotSecurityLevel securityLevel)
+{
+    return TellMaster(stream.str(), securityLevel);
+}
+
+bool PlayerbotAI::TellMaster(std::string const text, PlayerbotSecurityLevel securityLevel)
+{
+    if (!master || !TellMasterNoFacing(text, securityLevel))
+        return false;
+
+    if (!bot->isMoving() && !bot->IsInCombat() && bot->GetMapId() == master->GetMapId() &&
+        !bot->HasUnitState(UNIT_STATE_IN_FLIGHT) && !bot->IsFlying())
+    {
+        if (!bot->HasInArc(EMOTE_ANGLE_IN_FRONT, master, sPlayerbotAIConfig->sightDistance))
+            bot->SetFacingToObject(master);
+
+        bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
+    }
+
+    return true;
+}
+
+bool IsRealAura(Player* bot, AuraEffect const* aurEff, Unit const* unit)
+{
+    if (!aurEff)
+        return false;
+
+    if (!unit->IsHostileTo(bot))
+        return true;
+
+    SpellInfo const* spellInfo = aurEff->GetSpellInfo();
+
+    uint32 stacks = aurEff->GetBase()->GetStackAmount();
+    if (stacks >= spellInfo->StackAmount)
+        return true;
+
+    if (aurEff->GetCaster() == bot || spellInfo->IsPositive() ||
+        spellInfo->Effects[aurEff->GetEffIndex()].IsAreaAuraEffect())
+        return true;
+
+    return false;
+}
+
+bool PlayerbotAI::HasAura(std::string const name, Unit* unit, bool maxStack, bool checkIsOwner, int maxAuraAmount, bool checkDuration)
+{
+    if (!unit || !unit->IsInWorld())
+        return false;
+
+    std::wstring wnamepart;
+    if (!Utf8toWStr(name, wnamepart))
+        return false;
+
+    wstrToLower(wnamepart);
+
+    std::atomic<int> auraAmount{0};
+
+    // Iterate through all aura types
+    for (uint32 auraType = SPELL_AURA_BIND_SIGHT; auraType < TOTAL_AURAS; auraType++)
+    {
+        Unit::AuraEffectList const& auras = unit->GetAuraEffectsByType((AuraType)auraType);
+        if (auras.empty())
+            continue;
+
+        // Iterate through each aura effect
+        for (AuraEffect const* aurEff : auras)
+        {
+            if (!aurEff)
+                continue;
+
+            SpellInfo const* spellInfo = aurEff->GetSpellInfo();
+            if (!spellInfo)
+                continue;
+
+            // Check if the aura name matches
+            std::string_view const auraName = spellInfo->SpellName[0];
+            if (auraName.empty() || auraName.length() != wnamepart.length() || !Utf8FitTo(auraName, wnamepart))
+                continue;
+
+            // Check if this is a valid aura for the bot
+            if (IsRealAura(bot, aurEff, unit))
+            {
+                // Check caster if necessary
+                if (checkIsOwner && aurEff->GetCasterGUID() != bot->GetGUID())
+                    continue;
+
+                // Check aura duration if necessary
+                if (checkDuration && aurEff->GetBase()->GetDuration() == -1)
+                    continue;
+
+                // Count stacks and charges
+                uint32 maxStackAmount = spellInfo->StackAmount;
+                uint32 maxProcCharges = spellInfo->ProcCharges;
+
+                // Count the aura based on max stack and proc charges
+                if (maxStack)
+                {
+                    if (maxStackAmount && aurEff->GetBase()->GetStackAmount() >= maxStackAmount)
+                        auraAmount++;
+
+                    if (maxProcCharges && aurEff->GetBase()->GetCharges() >= maxProcCharges)
+                        auraAmount++;
+                }
+                else
+                {
+                    auraAmount++;
+                }
+
+                // Early exit if maxAuraAmount is reached
+                if (maxAuraAmount < 0 && auraAmount > 0)
+                    return true;
+            }
+        }
+    }
+
+    // Return based on the maximum aura amount conditions
+    if (maxAuraAmount >= 0)
+    {
+        return auraAmount == maxAuraAmount || (auraAmount > 0 && auraAmount <= maxAuraAmount);
+    }
+
+    return false;
+}
+
+bool PlayerbotAI::HasAura(uint32 spellId, Unit const* unit)
+{
+    if (!spellId || !unit)
+        return false;
+
+    return unit->HasAura(spellId);
+    // for (uint8 effect = EFFECT_0; effect <= EFFECT_2; effect++)
+    // {
+    // 	AuraEffect const* aurEff = unit->GetAuraEffect(spellId, effect);
+    // 	if (IsRealAura(bot, aurEff, unit))
+    // 		return true;
+    // }
+
+    // return false;
+}
+
+Aura* PlayerbotAI::GetAura(std::string const name, Unit* unit, bool checkIsOwner, bool checkDuration, int checkStack)
+{
+    if (!unit)
+        return nullptr;
+
+    std::wstring wnamepart;
+    if (!Utf8toWStr(name, wnamepart))
+        return nullptr;
+
+    wstrToLower(wnamepart);
+
+    for (uint32 auraType = SPELL_AURA_BIND_SIGHT; auraType < TOTAL_AURAS; ++auraType)
+    {
+        Unit::AuraEffectList const& auras = unit->GetAuraEffectsByType((AuraType)auraType);
+        if (auras.empty())
+            continue;
+
+        for (AuraEffect const* aurEff : auras)
+        {
+            SpellInfo const* spellInfo = aurEff->GetSpellInfo();
+            std::string const& auraName = spellInfo->SpellName[0];
+
+            // Directly skip if name mismatch (both length and content)
+            if (auraName.empty() || auraName.length() != wnamepart.length() || !Utf8FitTo(auraName, wnamepart))
+                continue;
+
+            if (!IsRealAura(bot, aurEff, unit))
+                continue;
+
+            // Check owner if necessary
+            if (checkIsOwner && aurEff->GetCasterGUID() != bot->GetGUID())
+                continue;
+
+            // Check duration if necessary
+            if (checkDuration && aurEff->GetBase()->GetDuration() == -1)
+                continue;
+
+            // Check stack if necessary
+            if (checkStack != -1 && aurEff->GetBase()->GetStackAmount() < checkStack)
+                continue;
+
+            return aurEff->GetBase();
+        }
+    }
+
+    return nullptr;
+}
+
+bool PlayerbotAI::HasAnyAuraOf(Unit* player, ...)
+{
+    if (!player)
+        return false;
+
+    va_list vl;
+    va_start(vl, player);
+
+    const char* cur;
+    while ((cur = va_arg(vl, const char*)) != nullptr)
+    {
+        if (HasAura(cur, player))
+        {
+            va_end(vl);
+            return true;
+        }
+    }
+
+    va_end(vl);
+    return false;
+}
+
+bool PlayerbotAI::CanCastSpell(std::string const name, Unit* target, Item* itemTarget)
+{
+    return CanCastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target, true, itemTarget);
+}
+
+bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell, Item* itemTarget, Item* castItem)
+{
+    if (!spellid)
+    {
+        if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster()))
+        {
+            LOG_DEBUG("playerbots", "Can cast spell failed. No spellid. - spellid: {}, bot name: {}", spellid,
+                      bot->GetName());
+        }
+        return false;
+    }
+
+    if (bot->HasUnitState(UNIT_STATE_LOST_CONTROL))
+    {
+        if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster()))
+        {
+            LOG_DEBUG("playerbots", "Can cast spell failed. Unit state lost control. - spellid: {}, bot name: {}",
+                      spellid, bot->GetName());
+        }
+        return false;
+    }
+
+    if (!target)
+        target = bot;
+
+    if (Pet* pet = bot->GetPet())
+        if (pet->HasSpell(spellid))
+            return true;
+
+    if (checkHasSpell && !bot->HasSpell(spellid))
+    {
+        if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster()))
+        {
+            LOG_DEBUG("playerbots",
+                      "Can cast spell failed. Bot not has spell. - target name: {}, spellid: {}, bot name: {}",
+                      target->GetName(), spellid, bot->GetName());
+        }
+        return false;
+    }
+
+    if (bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL) != nullptr)
+    {
+        if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster()))
+        {
+            LOG_DEBUG(
+                "playerbots",
+                "CanCastSpell() target name: {}, spellid: {}, bot name: {}, failed because has current channeled spell",
+                target->GetName(), spellid, bot->GetName());
+        }
+        return false;
+    }
+
+    if (bot->HasSpellCooldown(spellid))
+    {
+        if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster()))
+        {
+            LOG_DEBUG("playerbots",
+                      "Can cast spell failed. Spell not has cooldown. - target name: {}, spellid: {}, bot name: {}",
+                      target->GetName(), spellid, bot->GetName());
+        }
+        return false;
+    }
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellid);
+    if (!spellInfo)
+    {
+        if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster()))
+        {
+            LOG_DEBUG("playerbots", "Can cast spell failed. No spellInfo. - target name: {}, spellid: {}, bot name: {}",
+                      target->GetName(), spellid, bot->GetName());
+        }
+        return false;
+    }
+
+    uint32 CastingTime = !spellInfo->IsChanneled() ? spellInfo->CalcCastTime(bot) : spellInfo->GetDuration();
+    // bool interruptOnMove = spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_MOVEMENT;
+    if ((CastingTime || spellInfo->IsAutoRepeatRangedSpell()) && bot->isMoving())
+    {
+        if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster()))
+        {
+            LOG_DEBUG("playerbots", "Casting time and bot is moving - target name: {}, spellid: {}, bot name: {}",
+                      target->GetName(), spellid, bot->GetName());
+        }
+        return false;
+    }
+
+    if (!itemTarget)
+    {
+        if (target->IsImmunedToSpell(spellInfo))
+        {
+            if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster()))
+            {
+                LOG_DEBUG("playerbots", "target is immuned to spell - target name: {}, spellid: {}, bot name: {}",
+                          target->GetName(), spellid, bot->GetName());
+            }
+            return false;
+        }
+
+        if (bot != target && sServerFacade->GetDistance2d(bot, target) > sPlayerbotAIConfig->sightDistance)
+        {
+            if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster()))
+            {
+                LOG_DEBUG("playerbots", "target is out of sight distance - target name: {}, spellid: {}, bot name: {}",
+                          target->GetName(), spellid, bot->GetName());
+            }
+            return false;
+        }
+    }
+
+    Unit* oldSel = bot->GetSelectedUnit();
+    // TRIGGERED_IGNORE_POWER_AND_REAGENT_COST flag for not calling CheckPower in check
+    // which avoids buff charge to be ineffectively reduced (e.g. dk freezing fog for howling blast)
+    /// @TODO: Fix all calls to ApplySpellMod
+    Spell* spell = new Spell(bot, spellInfo, TRIGGERED_IGNORE_POWER_AND_REAGENT_COST);
+
+    spell->m_targets.SetUnitTarget(target);
+    spell->m_CastItem = castItem;
+    if (itemTarget == nullptr)
+    {
+        itemTarget = aiObjectContext->GetValue<Item*>("item for spell", spellid)->Get();
+        ;
+    }
+    spell->m_targets.SetItemTarget(itemTarget);
+    SpellCastResult result = spell->CheckCast(true);
+    delete spell;
+
+    // if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster())) {
+    //     if (result != SPELL_FAILED_NOT_READY && result != SPELL_CAST_OK) {
+    //         LOG_DEBUG("playerbots", "CanCastSpell - target name: {}, spellid: {}, bot name: {}, result: {}",
+    //             target->GetName(), spellid, bot->GetName(), result);
+    //     }
+    // }
+
+    if (oldSel)
+        bot->SetSelection(oldSel->GetGUID());
+
+    switch (result)
+    {
+        case SPELL_FAILED_NOT_INFRONT:
+        case SPELL_FAILED_NOT_STANDING:
+        case SPELL_FAILED_UNIT_NOT_INFRONT:
+        case SPELL_FAILED_MOVING:
+        case SPELL_FAILED_TRY_AGAIN:
+        case SPELL_CAST_OK:
+        case SPELL_FAILED_NOT_SHAPESHIFT:
+        case SPELL_FAILED_OUT_OF_RANGE:
+            return true;
+        default:
+            if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster()))
+            {
+                // if (result != SPELL_FAILED_NOT_READY && result != SPELL_CAST_OK) {
+                LOG_DEBUG("playerbots",
+                          "CanCastSpell Check Failed. - target name: {}, spellid: {}, bot name: {}, result: {}",
+                          target->GetName(), spellid, bot->GetName(), result);
+            }
+            return false;
+    }
+}
+
+bool PlayerbotAI::CanCastSpell(uint32 spellid, GameObject* goTarget, bool checkHasSpell)
+{
+    if (!spellid)
+        return false;
+
+    if (bot->HasUnitState(UNIT_STATE_LOST_CONTROL))
+        return false;
+
+    Pet* pet = bot->GetPet();
+    if (pet && pet->HasSpell(spellid))
+        return true;
+
+    if (checkHasSpell && !bot->HasSpell(spellid))
+        return false;
+
+    if (bot->HasSpellCooldown(spellid))
+        return false;
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellid);
+    if (!spellInfo)
+        return false;
+
+    int32 CastingTime = !spellInfo->IsChanneled() ? spellInfo->CalcCastTime(bot) : spellInfo->GetDuration();
+    if (CastingTime > 0 && bot->isMoving())
+        return false;
+
+    if (sServerFacade->GetDistance2d(bot, goTarget) > sPlayerbotAIConfig->sightDistance)
+        return false;
+
+    // ObjectGuid oldSel = bot->GetTarget();
+    // bot->SetTarget(goTarget->GetGUID());
+    Spell* spell = new Spell(bot, spellInfo, TRIGGERED_NONE);
+
+    spell->m_targets.SetGOTarget(goTarget);
+    Item* item = aiObjectContext->GetValue<Item*>("item for spell", spellid)->Get();
+    spell->m_targets.SetItemTarget(item);
+
+    SpellCastResult result = spell->CheckCast(true);
+    delete spell;
+    // if (oldSel)
+    //     bot->SetTarget(oldSel);
+
+    switch (result)
+    {
+        case SPELL_FAILED_NOT_INFRONT:
+        case SPELL_FAILED_NOT_STANDING:
+        case SPELL_FAILED_UNIT_NOT_INFRONT:
+        case SPELL_FAILED_MOVING:
+        case SPELL_FAILED_TRY_AGAIN:
+        case SPELL_CAST_OK:
+            return true;
+        default:
+            break;
+    }
+
+    return false;
+}
+
+bool PlayerbotAI::CanCastSpell(uint32 spellid, float x, float y, float z, bool checkHasSpell, Item* itemTarget)
+{
+    if (!spellid)
+        return false;
+
+    Pet* pet = bot->GetPet();
+    if (pet && pet->HasSpell(spellid))
+        return true;
+
+    if (checkHasSpell && !bot->HasSpell(spellid))
+        return false;
+
+    if (bot->HasSpellCooldown(spellid))
+        return false;
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellid);
+    if (!spellInfo)
+        return false;
+
+    if (!itemTarget)
+    {
+        if (bot->GetDistance(x, y, z) > sPlayerbotAIConfig->sightDistance)
+            return false;
+    }
+
+    Spell* spell = new Spell(bot, spellInfo, TRIGGERED_NONE);
+
+    spell->m_targets.SetDst(x, y, z, 0.f);
+
+    Item* item = itemTarget ? itemTarget : aiObjectContext->GetValue<Item*>("item for spell", spellid)->Get();
+    spell->m_targets.SetItemTarget(item);
+
+    SpellCastResult result = spell->CheckCast(true);
+    delete spell;
+
+    switch (result)
+    {
+        case SPELL_FAILED_NOT_INFRONT:
+        case SPELL_FAILED_NOT_STANDING:
+        case SPELL_FAILED_UNIT_NOT_INFRONT:
+        case SPELL_FAILED_MOVING:
+        case SPELL_FAILED_TRY_AGAIN:
+        case SPELL_CAST_OK:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool PlayerbotAI::CastSpell(std::string const name, Unit* target, Item* itemTarget)
+{
+    bool result = CastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target, itemTarget);
+    if (result)
+    {
+        aiObjectContext->GetValue<time_t>("last spell cast time", name)->Set(time(nullptr));
+    }
+
+    return result;
+}
+
+bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget)
+{
+    if (!spellId)
+    {
+        return false;
+    }
+
+    if (!target)
+        target = bot;
+
+    Pet* pet = bot->GetPet();
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (pet && pet->HasSpell(spellId))
+    {
+        bool autocast = false;
+        for (unsigned int& m_autospell : pet->m_autospells)
+        {
+            if (m_autospell == spellId)
+            {
+                autocast = true;
+                break;
+            }
+        }
+
+        pet->ToggleAutocast(spellInfo, !autocast);
+        std::ostringstream out;
+        out << (autocast ? "|cffff0000|Disabling" : "|cFF00ff00|Enabling") << " pet auto-cast for ";
+        out << chatHelper.FormatSpell(spellInfo);
+        TellMaster(out);
+        return true;
+    }
+
+    // aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(nullptr);
+    // aiObjectContext->GetValue<time_t>("stay time")->Set(0);
+
+    if (bot->IsFlying() || bot->HasUnitState(UNIT_STATE_IN_FLIGHT))
+    {
+        // if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster())) {
+        //     LOG_DEBUG("playerbots", "Spell cast is flying - target name: {}, spellid: {}, bot name: {}}",
+        //         target->GetName(), spellId, bot->GetName());
+        // }
+        return false;
+    }
+
+    // bot->ClearUnitState(UNIT_STATE_CHASE);
+    // bot->ClearUnitState(UNIT_STATE_FOLLOW);
+
+    bool failWithDelay = false;
+    if (!bot->IsStandState())
+    {
+        bot->SetStandState(UNIT_STAND_STATE_STAND);
+        failWithDelay = true;
+    }
+
+    ObjectGuid oldSel = bot->GetSelectedUnit() ? bot->GetSelectedUnit()->GetGUID() : ObjectGuid();
+    bot->SetSelection(target->GetGUID());
+    WorldObject* faceTo = target;
+    if (!bot->HasInArc(CAST_ANGLE_IN_FRONT, faceTo) && (spellInfo->FacingCasterFlags & SPELL_FACING_FLAG_INFRONT))
+    {
+        sServerFacade->SetFacingTo(bot, faceTo);
+        // failWithDelay = true;
+    }
+
+    if (failWithDelay)
+    {
+        SetNextCheckDelay(sPlayerbotAIConfig->reactDelay);
+        return false;
+    }
+
+    Spell* spell = new Spell(bot, spellInfo, TRIGGERED_NONE);
+
+    SpellCastTargets targets;
+    if (spellInfo->Effects[0].Effect != SPELL_EFFECT_OPEN_LOCK &&
+        (spellInfo->Targets & TARGET_FLAG_ITEM || spellInfo->Targets & TARGET_FLAG_GAMEOBJECT_ITEM))
+    {
+        Item* item = itemTarget ? itemTarget : aiObjectContext->GetValue<Item*>("item for spell", spellId)->Get();
+        targets.SetItemTarget(item);
+
+        if (bot->GetTradeData())
+        {
+            bot->GetTradeData()->SetSpell(spellId);
+            delete spell;
+            // if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster())) {
+            //     LOG_DEBUG("playerbots", "Spell cast no item - target name: {}, spellid: {}, bot name: {}",
+            //         target->GetName(), spellId, bot->GetName());
+            // }
+            return true;
+        }
+    }
+    else if (spellInfo->Targets & TARGET_FLAG_DEST_LOCATION)
+    {
+        // WorldLocation aoe = aiObjectContext->GetValue<WorldLocation>("aoe position")->Get();
+        // targets.SetDst(aoe);
+        targets.SetDst(*target);
+    }
+    else if (spellInfo->Targets & TARGET_FLAG_SOURCE_LOCATION)
+    {
+        targets.SetDst(*bot);
+    }
+    else
+    {
+        targets.SetUnitTarget(target);
+    }
+
+    if (spellInfo->Effects[0].Effect == SPELL_EFFECT_OPEN_LOCK || spellInfo->Effects[0].Effect == SPELL_EFFECT_SKINNING)
+    {
+        LootObject loot = *aiObjectContext->GetValue<LootObject>("loot target");
+        GameObject* go = GetGameObject(loot.guid);
+        if (go && go->isSpawned())
+        {
+            WorldPacket packetgouse(CMSG_GAMEOBJ_USE, 8);
+            packetgouse << loot.guid;
+            bot->GetSession()->HandleGameObjectUseOpcode(packetgouse);
+            targets.SetGOTarget(go);
+            faceTo = go;
+        }
+        else if (itemTarget)
+        {
+            Player* trader = bot->GetTrader();
+            if (trader)
+            {
+                targets.SetTradeItemTarget(bot);
+                targets.SetUnitTarget(bot);
+                faceTo = trader;
+            }
+            else
+            {
+                targets.SetItemTarget(itemTarget);
+            }
+        }
+        else
+        {
+            if (Unit* creature = GetUnit(loot.guid))
+            {
+                targets.SetUnitTarget(creature);
+                faceTo = creature;
+            }
+        }
+    }
+
+    if (bot->isMoving() && spell->GetCastTime())
+    {
+        // bot->StopMoving();
+        SetNextCheckDelay(sPlayerbotAIConfig->reactDelay);
+        spell->cancel();
+        delete spell;
+        return false;
+    }
+
+    // spell->m_targets.SetUnitTarget(target);
+    // SpellCastResult spellSuccess = spell->CheckCast(true);
+    // if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster())) {
+    //     LOG_DEBUG("playerbots", "Spell cast result - target name: {}, spellid: {}, bot name: {}, result: {}",
+    //         target->GetName(), spellId, bot->GetName(), spellSuccess);
+    // }
+    // if (spellSuccess != SPELL_CAST_OK)
+    //     return false;
+
+    SpellCastResult result = spell->prepare(&targets);
+
+    if (result != SPELL_CAST_OK)
+    {
+        // if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster())) {
+        //     LOG_DEBUG("playerbots", "Spell cast failed. - target name: {}, spellid: {}, bot name: {}, result: {}",
+        //         target->GetName(), spellId, bot->GetName(), result);
+        // }
+        if (HasStrategy("debug spell", BOT_STATE_NON_COMBAT))
+        {
+            std::ostringstream out;
+            out << "Spell cast failed - ";
+            out << "Spell ID: " << spellId << " (" << ChatHelper::FormatSpell(spellInfo) << "), ";
+            out << "Error Code: " << static_cast<int>(result) << " (0x" << std::hex << static_cast<int>(result) << std::dec << "), ";
+            out << "Bot: " << bot->GetName() << ", ";
+    
+            // Check spell target type
+            if (targets.GetUnitTarget())
+            {
+                out << "Target: Unit (" << targets.GetUnitTarget()->GetName() 
+                    << ", Low GUID: " << targets.GetUnitTarget()->GetGUID().GetCounter()
+                    << ", High GUID: " << static_cast<uint32>(targets.GetUnitTarget()->GetGUID().GetHigh()) << "), ";
+            }
+
+            if (targets.GetGOTarget())
+            {
+                out << "Target: GameObject (Low GUID: " << targets.GetGOTarget()->GetGUID().GetCounter()
+                    << ", High GUID: " << static_cast<uint32>(targets.GetGOTarget()->GetGUID().GetHigh()) << "), ";
+            }
+
+            if (targets.GetItemTarget())
+            {
+                out << "Target: Item (Low GUID: " << targets.GetItemTarget()->GetGUID().GetCounter()
+                    << ", High GUID: " << static_cast<uint32>(targets.GetItemTarget()->GetGUID().GetHigh()) << "), ";
+            }
+    
+            // Check if bot is in trade mode
+            if (bot->GetTradeData())
+            {
+                out << "Trade Mode: Active, ";
+                Item* tradeItem = bot->GetTradeData()->GetTraderData()->GetItem(TRADE_SLOT_NONTRADED);
+                if (tradeItem)
+                {
+                    out << "Trade Item: " << tradeItem->GetEntry() 
+                        << " (Low GUID: " << tradeItem->GetGUID().GetCounter()
+                        << ", High GUID: " << static_cast<uint32>(tradeItem->GetGUID().GetHigh()) << "), ";
+                }
+                else
+                {
+                    out << "Trade Item: None, ";
+                }
+            }
+            else
+            {
+                out << "Trade Mode: Inactive, ";
+            }
+    
+            TellMasterNoFacing(out);
+        }
+
+        return false;
+    }
+    // if (spellInfo->Effects[0].Effect == SPELL_EFFECT_OPEN_LOCK || spellInfo->Effects[0].Effect ==
+    // SPELL_EFFECT_SKINNING)
+    // {
+    //     LootObject loot = *aiObjectContext->GetValue<LootObject>("loot target");
+    //     if (!loot.IsLootPossible(bot))
+    //     {
+    //         spell->cancel();
+    //         delete spell;
+    //         if (!sPlayerbotAIConfig->logInGroupOnly || (bot->GetGroup() && HasRealPlayerMaster())) {
+    //             LOG_DEBUG("playerbots", "Spell cast loot - target name: {}, spellid: {}, bot name: {}",
+    //                 target->GetName(), spellId, bot->GetName());
+    //         }
+    //         return false;
+    //     }
+    // }
+
+    // WaitForSpellCast(spell);
+
+    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetGUID(), time(nullptr));
+
+    aiObjectContext->GetValue<PositionMap&>("position")->Get()["random"].Reset();
+
+    if (oldSel)
+        bot->SetSelection(oldSel);
+
+    if (HasStrategy("debug spell", BOT_STATE_NON_COMBAT))
+    {
+        std::ostringstream out;
+        out << "Casting " << ChatHelper::FormatSpell(spellInfo);
+        TellMasterNoFacing(out);
+    }
+
+    return true;
+}
+
+bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* itemTarget)
+{
+    if (!spellId)
+        return false;
+
+    Pet* pet = bot->GetPet();
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (pet && pet->HasSpell(spellId))
+    {
+        bool autocast = false;
+        for (unsigned int& m_autospell : pet->m_autospells)
+        {
+            if (m_autospell == spellId)
+            {
+                autocast = true;
+                break;
+            }
+        }
+
+        pet->ToggleAutocast(spellInfo, !autocast);
+        std::ostringstream out;
+        out << (autocast ? "|cffff0000|Disabling" : "|cFF00ff00|Enabling") << " pet auto-cast for ";
+        out << chatHelper.FormatSpell(spellInfo);
+        TellMaster(out);
+        return true;
+    }
+
+    // aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(nullptr);
+    // aiObjectContext->GetValue<time_t>("stay time")->Set(0);
+
+    // MotionMaster& mm = *bot->GetMotionMaster();
+
+    if (bot->IsFlying() || bot->HasUnitState(UNIT_STATE_IN_FLIGHT))
+        return false;
+
+    // bot->ClearUnitState(UNIT_STATE_CHASE);
+    // bot->ClearUnitState(UNIT_STATE_FOLLOW);
+
+    bool failWithDelay = false;
+    if (!bot->IsStandState())
+    {
+        bot->SetStandState(UNIT_STAND_STATE_STAND);
+        failWithDelay = true;
+    }
+
+    ObjectGuid oldSel = bot->GetSelectedUnit() ? bot->GetSelectedUnit()->GetGUID() : ObjectGuid();
+
+    if (!bot->isMoving())
+        bot->SetFacingTo(bot->GetAngle(x, y));
+
+    if (failWithDelay)
+    {
+        SetNextCheckDelay(sPlayerbotAIConfig->globalCoolDown);
+        return false;
+    }
+
+    Spell* spell = new Spell(bot, spellInfo, TRIGGERED_NONE);
+
+    SpellCastTargets targets;
+    if (spellInfo->Targets & TARGET_FLAG_ITEM || spellInfo->Targets & TARGET_FLAG_GAMEOBJECT_ITEM)
+    {
+        Item* item = itemTarget ? itemTarget : aiObjectContext->GetValue<Item*>("item for spell", spellId)->Get();
+        targets.SetItemTarget(item);
+
+        if (bot->GetTradeData())
+        {
+            bot->GetTradeData()->SetSpell(spellId);
+            delete spell;
+            return true;
+        }
+    }
+    else if (spellInfo->Targets & TARGET_FLAG_DEST_LOCATION)
+    {
+        // WorldLocation aoe = aiObjectContext->GetValue<WorldLocation>("aoe position")->Get();
+        targets.SetDst(x, y, z, 0.f);
+    }
+    else if (spellInfo->Targets & TARGET_FLAG_SOURCE_LOCATION)
+    {
+        targets.SetDst(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), 0.f);
+    }
+    else
+    {
+        return false;
+    }
+
+    if (spellInfo->Effects[0].Effect == SPELL_EFFECT_OPEN_LOCK || spellInfo->Effects[0].Effect == SPELL_EFFECT_SKINNING)
+    {
+        return false;
+    }
+
+    spell->prepare(&targets);
+
+    if (bot->isMoving() && spell->GetCastTime())
+    {
+        // bot->StopMoving();
+        SetNextCheckDelay(sPlayerbotAIConfig->reactDelay);
+        spell->cancel();
+        delete spell;
+        return false;
+    }
+
+    if (spellInfo->Effects[0].Effect == SPELL_EFFECT_OPEN_LOCK || spellInfo->Effects[0].Effect == SPELL_EFFECT_SKINNING)
+    {
+        LootObject loot = *aiObjectContext->GetValue<LootObject>("loot target");
+        if (!loot.IsLootPossible(bot))
+        {
+            spell->cancel();
+            delete spell;
+            return false;
+        }
+    }
+
+    // WaitForSpellCast(spell);
+    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, bot->GetGUID(), time(nullptr));
+    aiObjectContext->GetValue<PositionMap&>("position")->Get()["random"].Reset();
+
+    if (oldSel)
+        bot->SetSelection(oldSel);
+
+    if (HasStrategy("debug spell", BOT_STATE_NON_COMBAT))
+    {
+        std::ostringstream out;
+        out << "Casting " << ChatHelper::FormatSpell(spellInfo);
+        TellMasterNoFacing(out);
+    }
+
+    return true;
+}
+
+bool PlayerbotAI::CanCastVehicleSpell(uint32 spellId, Unit* target)
+{
+    if (!spellId)
+        return false;
+
+    Vehicle* vehicle = bot->GetVehicle();
+    if (!vehicle)
+        return false;
+
+    // do not allow if no spells
+    VehicleSeatEntry const* seat = vehicle->GetSeatForPassenger(bot);
+    if (!seat || !(seat->m_flags & VEHICLE_SEAT_FLAG_CAN_CAST))
+        return false;
+
+    Unit* vehicleBase = vehicle->GetBase();
+
+    Unit* spellTarget = target;
+    if (!spellTarget)
+        spellTarget = vehicleBase;
+
+    if (!spellTarget)
+        return false;
+
+    if (vehicleBase->HasSpellCooldown(spellId))
+        return false;
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo)
+        return false;
+
+    // check BG siege position set in BG Tactics
+    PositionInfo siegePos = GetAiObjectContext()->GetValue<PositionMap&>("position")->Get()["bg siege"];
+
+    // do not cast spell on self if spell is location based
+    if (!(siegePos.isSet() || spellTarget != vehicleBase) && spellInfo->Targets & TARGET_FLAG_DEST_LOCATION)
+        return false;
+
+    uint32 CastingTime = !spellInfo->IsChanneled() ? spellInfo->CalcCastTime(vehicleBase) : spellInfo->GetDuration();
+    if (CastingTime && vehicleBase->isMoving())
+        return false;
+
+    if (vehicleBase != spellTarget && sServerFacade->GetDistance2d(vehicleBase, spellTarget) > 120.0f)
+        return false;
+
+    if (!target && siegePos.isSet())
+    {
+        if (sServerFacade->GetDistance2d(vehicleBase, siegePos.x, siegePos.y) > 120.0f)
+            return false;
+    }
+
+    Spell* spell = new Spell(vehicleBase, spellInfo, TRIGGERED_NONE);
+
+    WorldLocation dest;
+    if (siegePos.isSet())
+        dest = WorldLocation(bot->GetMapId(), siegePos.x, siegePos.y, siegePos.z, 0);
+    else if (spellTarget != vehicleBase)
+        dest = WorldLocation(spellTarget->GetMapId(), spellTarget->GetPosition());
+
+    if (spellInfo->Targets & TARGET_FLAG_DEST_LOCATION)
+        spell->m_targets.SetDst(dest);
+    else if (spellTarget != vehicleBase)
+        spell->m_targets.SetUnitTarget(spellTarget);
+
+    SpellCastResult result = spell->CheckCast(true);
+    delete spell;
+
+    switch (result)
+    {
+        case SPELL_FAILED_NOT_INFRONT:
+        case SPELL_FAILED_NOT_STANDING:
+        case SPELL_FAILED_UNIT_NOT_INFRONT:
+        case SPELL_FAILED_MOVING:
+        case SPELL_FAILED_TRY_AGAIN:
+        case SPELL_CAST_OK:
+            return true;
+        default:
+            return false;
+    }
+
+    return false;
+}
+
+bool PlayerbotAI::CastVehicleSpell(uint32 spellId, Unit* target)
+{
+    if (!spellId)
+        return false;
+
+    Vehicle* vehicle = bot->GetVehicle();
+    if (!vehicle)
+        return false;
+
+    // do not allow if no spells
+    VehicleSeatEntry const* seat = vehicle->GetSeatForPassenger(bot);
+    if (!seat || !(seat->m_flags & VEHICLE_SEAT_FLAG_CAN_CAST))
+        return false;
+
+    Unit* vehicleBase = vehicle->GetBase();
+
+    Unit* spellTarget = target;
+    if (!spellTarget)
+        spellTarget = vehicleBase;
+
+    if (!spellTarget)
+        return false;
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo)
+        return false;
+
+    // check BG siege position set in BG Tactics
+    PositionInfo siegePos = GetAiObjectContext()->GetValue<PositionMap&>("position")->Get()["bg siege"];
+    if (!target && siegePos.isSet())
+    {
+        if (sServerFacade->GetDistance2d(vehicleBase, siegePos.x, siegePos.y) > 120.0f)
+            return false;
+    }
+
+    // do not cast spell on self if spell is location based
+    if (!(siegePos.isSet() || spellTarget != vehicleBase) && (spellInfo->Targets & TARGET_FLAG_DEST_LOCATION) != 0)
+        return false;
+
+    if (seat->CanControl())
+    {
+        // aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(nullptr);
+        // aiObjectContext->GetValue<time_t>("stay time")->Set(0);
+    }
+
+    // bot->clearUnitState(UNIT_STAT_CHASE);
+    // bot->clearUnitState(UNIT_STAT_FOLLOW);
+
+    // ObjectGuid oldSel = bot->GetSelectionGuid();
+    // bot->SetSelectionGuid(target->GetGUID());
+
+    // turn vehicle if target is not in front
+    bool failWithDelay = false;
+    if (spellTarget != vehicleBase && (seat->CanControl() || (seat->m_flags & VEHICLE_SEAT_FLAG_ALLOW_TURNING)))
+    {
+        if (!vehicleBase->HasInArc(CAST_ANGLE_IN_FRONT, spellTarget, 100.0f))
+        {
+            vehicleBase->SetFacingToObject(spellTarget);
+            failWithDelay = true;
+        }
+    }
+
+    if (siegePos.isSet() && (seat->CanControl() || (seat->m_flags & VEHICLE_SEAT_FLAG_ALLOW_TURNING)))
+    {
+        vehicleBase->SetFacingTo(vehicleBase->GetAngle(siegePos.x, siegePos.y));
+    }
+
+    if (failWithDelay)
+    {
+        SetNextCheckDelay(sPlayerbotAIConfig->reactDelay);
+        return false;
+    }
+
+    Spell* spell = new Spell(vehicleBase, spellInfo, TRIGGERED_NONE);
+
+    SpellCastTargets targets;
+    if ((spellTarget != vehicleBase || siegePos.isSet()) && (spellInfo->Targets & TARGET_FLAG_DEST_LOCATION))
+    {
+        WorldLocation dest;
+        if (spellTarget != vehicleBase)
+            dest = WorldLocation(spellTarget->GetMapId(), spellTarget->GetPosition());
+        else if (siegePos.isSet())
+            dest = WorldLocation(bot->GetMapId(), siegePos.x + frand(-5.0f, 5.0f), siegePos.y + frand(-5.0f, 5.0f),
+                                 siegePos.z, 0.0f);
+        else
+            return false;
+
+        targets.SetDst(dest);
+        targets.SetSpeed(30.0f);
+        float dist = vehicleBase->GetPosition().GetExactDist(dest);
+        // very much an approximation of the real projectile arc
+        float elev = dist >= 110.0f ? 1.0f : pow(((dist + 10.0f) / 120.0f), 2.0f);
+        targets.SetElevation(elev);
+    }
+
+    if (spellInfo->Targets & TARGET_FLAG_SOURCE_LOCATION)
+    {
+        targets.SetSrc(vehicleBase->GetPositionX(), vehicleBase->GetPositionY(), vehicleBase->GetPositionZ());
+    }
+
+    if (target && !(spellInfo->Targets & TARGET_FLAG_DEST_LOCATION))
+    {
+        targets.SetUnitTarget(spellTarget);
+    }
+
+    spell->prepare(&targets);
+
+    if (seat->CanControl() && vehicleBase->isMoving() && spell->GetCastTime())
+    {
+        vehicleBase->StopMoving();
+        SetNextCheckDelay(sPlayerbotAIConfig->globalCoolDown);
+        spell->cancel();
+        // delete spell;
+        return false;
+    }
+
+    // WaitForSpellCast(spell);
+
+    // aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetGUID(), time(0));
+    // aiObjectContext->GetValue<botAI::PositionMap&>("position")->Get()["random"].Reset();
+
+    if (HasStrategy("debug spell", BOT_STATE_NON_COMBAT))
+    {
+        std::ostringstream out;
+        out << "Casting Vehicle Spell" << ChatHelper::FormatSpell(spellInfo);
+        TellMasterNoFacing(out);
+    }
+
+    return true;
+}
+
+bool PlayerbotAI::IsInVehicle(bool canControl, bool canCast, bool canAttack, bool canTurn, bool fixed)
+{
+    Vehicle* vehicle = bot->GetVehicle();
+    if (!vehicle)
+        return false;
+
+    // get vehicle
+    Unit* vehicleBase = vehicle->GetBase();
+    if (!vehicleBase || !vehicleBase->IsAlive())
+        return false;
+
+    if (!vehicle->GetVehicleInfo())
+        return false;
+
+    // get seat
+    VehicleSeatEntry const* seat = vehicle->GetSeatForPassenger(bot);
+    if (!seat)
+        return false;
+
+    if (!(canControl || canCast || canAttack || canTurn || fixed))
+        return true;
+
+    if (canControl)
+        return seat->CanControl() && !(vehicle->GetVehicleInfo()->m_flags & VEHICLE_FLAG_FIXED_POSITION);
+
+    if (canCast)
+        return (seat->m_flags & VEHICLE_SEAT_FLAG_CAN_CAST) != 0;
+
+    if (canAttack)
+        return (seat->m_flags & VEHICLE_SEAT_FLAG_CAN_ATTACK) != 0;
+
+    if (canTurn)
+        return (seat->m_flags & VEHICLE_SEAT_FLAG_ALLOW_TURNING) != 0;
+
+    if (fixed)
+        return (vehicle->GetVehicleInfo()->m_flags & VEHICLE_FLAG_FIXED_POSITION) != 0;
+
+    return false;
+}
+
+void PlayerbotAI::WaitForSpellCast(Spell* spell)
+{
+    SpellInfo const* spellInfo = spell->GetSpellInfo();
+    uint32 castTime = spell->GetCastTime();
+    if (spellInfo->IsChanneled())
+    {
+        int32 duration = spellInfo->GetDuration();
+        bot->ApplySpellMod(spellInfo->Id, SPELLMOD_DURATION, duration);
+        if (duration > 0)
+            castTime += duration;
+    }
+
+    SetNextCheckDelay(castTime + sPlayerbotAIConfig->reactDelay);
+}
+
+void PlayerbotAI::InterruptSpell()
+{
+    for (uint8 type = CURRENT_MELEE_SPELL; type <= CURRENT_CHANNELED_SPELL; type++)
+    {
+        Spell* spell = bot->GetCurrentSpell((CurrentSpellTypes)type);
+        if (!spell)
+            continue;
+
+        bot->InterruptSpell((CurrentSpellTypes)type);
+
+        WorldPacket data(SMSG_SPELL_FAILURE, 8 + 1 + 4 + 1);
+        data << bot->GetPackGUID();
+        data << uint8(1);
+        data << uint32(spell->m_spellInfo->Id);
+        data << uint8(0);
+        bot->SendMessageToSet(&data, true);
+
+        data.Initialize(SMSG_SPELL_FAILED_OTHER, 8 + 1 + 4 + 1);
+        data << bot->GetPackGUID();
+        data << uint8(1);
+        data << uint32(spell->m_spellInfo->Id);
+        data << uint8(0);
+        bot->SendMessageToSet(&data, true);
+
+        SpellInterrupted(spell->m_spellInfo->Id);
+    }
+}
+
+void PlayerbotAI::RemoveAura(std::string const name)
+{
+    uint32 spellid = aiObjectContext->GetValue<uint32>("spell id", name)->Get();
+    if (spellid && HasAura(spellid, bot))
+        bot->RemoveAurasDueToSpell(spellid);
+}
+
+bool PlayerbotAI::IsInterruptableSpellCasting(Unit* target, std::string const spell)
+{
+    uint32 spellid = aiObjectContext->GetValue<uint32>("spell id", spell)->Get();
+    if (!spellid || !target->IsNonMeleeSpellCast(true))
+        return false;
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellid);
+    if (!spellInfo)
+        return false;
+
+    for (uint8 i = EFFECT_0; i <= EFFECT_2; i++)
+    {
+        if ((spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_INTERRUPT) &&
+            spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE)
+            return true;
+
+        if (spellInfo->Effects[i].Effect == SPELL_EFFECT_INTERRUPT_CAST &&
+            !target->IsImmunedToSpellEffect(spellInfo, i))
+            return true;
+
+        if ((spellInfo->Effects[i].Effect == SPELL_EFFECT_APPLY_AURA) &&
+            spellInfo->Effects[i].ApplyAuraName == SPELL_AURA_MOD_SILENCE)
+            return true;
+    }
+
+    return false;
+}
+
+bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
+{
+    if (!target->IsInWorld())
+    {
+        return false;
+    }
+    bool isFriend = bot->IsFriendlyTo(target);
+    Unit::VisibleAuraMap const* visibleAuras = target->GetVisibleAuras();
+    for (Unit::VisibleAuraMap::const_iterator itr = visibleAuras->begin(); itr != visibleAuras->end(); ++itr)
+    {
+        Aura* aura = itr->second->GetBase();
+
+        if (aura->IsPassive())
+            continue;
+
+        if (sPlayerbotAIConfig->dispelAuraDuration && aura->GetDuration() &&
+            aura->GetDuration() < (int32)sPlayerbotAIConfig->dispelAuraDuration)
+            continue;
+
+        SpellInfo const* spellInfo = aura->GetSpellInfo();
+
+        bool isPositiveSpell = spellInfo->IsPositive();
+        if (isPositiveSpell && isFriend)
+            continue;
+
+        if (!isPositiveSpell && !isFriend)
+            continue;
+
+        if (canDispel(spellInfo, dispelType))
+            return true;
+    }
+    return false;
+}
+
+#ifndef WIN32
+inline int strcmpi(char const* s1, char const* s2)
+{
+    for (; *s1 && *s2 && (toupper(*s1) == toupper(*s2)); ++s1, ++s2)
+    {
+    }
+    return *s1 - *s2;
+}
+#endif
+
+bool PlayerbotAI::canDispel(SpellInfo const* spellInfo, uint32 dispelType)
+{
+    if (spellInfo->Dispel != dispelType)
+        return false;
+
+    if (!spellInfo->SpellName[0])
+    {
+        return true;
+    }
+
+    for (std::string& wl : dispel_whitelist)
+    {
+        if (strcmpi((const char*)spellInfo->SpellName[0], wl.c_str()) == 0)
+        {
+            return false;
+        }
+    }
+
+    return !spellInfo->SpellName[0] || (strcmpi((const char*)spellInfo->SpellName[0], "demon skin") &&
+                                        strcmpi((const char*)spellInfo->SpellName[0], "mage armor") &&
+                                        strcmpi((const char*)spellInfo->SpellName[0], "frost armor") &&
+                                        strcmpi((const char*)spellInfo->SpellName[0], "wavering will") &&
+                                        strcmpi((const char*)spellInfo->SpellName[0], "chilled") &&
+                                        strcmpi((const char*)spellInfo->SpellName[0], "mana tap") &&
+                                        strcmpi((const char*)spellInfo->SpellName[0], "ice armor"));
+}
+
+bool IsAlliance(uint8 race)
+{
+    return race == RACE_HUMAN || race == RACE_DWARF || race == RACE_NIGHTELF || race == RACE_GNOME ||
+           race == RACE_DRAENEI;
+}
+
+bool PlayerbotAI::HasRealPlayerMaster()
+{
+    if (master)
+    {
+        PlayerbotAI* masterBotAI = GET_PLAYERBOT_AI(master);
+        return !masterBotAI || masterBotAI->IsRealPlayer();
+    }
+
+    return false;
+}
+
+bool PlayerbotAI::HasActivePlayerMaster() { return master && !GET_PLAYERBOT_AI(master); }
+
+bool PlayerbotAI::IsAlt() { return HasRealPlayerMaster() && !sRandomPlayerbotMgr->IsRandomBot(bot); }
+
+Player* PlayerbotAI::GetGroupMaster()
+{
+    if (!bot->InBattleground())
+        if (Group* group = bot->GetGroup())
+            if (Player* player = ObjectAccessor::FindPlayer(group->GetLeaderGUID()))
+                return player;
+
+    return master;
+}
+
+uint32 PlayerbotAI::GetFixedBotNumer(uint32 maxNum, float cyclePerMin)
+{
+    uint32 randseed = rand32();                               // Seed random number
+    uint32 randnum = bot->GetGUID().GetCounter() + randseed;  // Semi-random but fixed number for each bot.
+
+    if (cyclePerMin > 0)
+    {
+        uint32 cycle = floor(getMSTime() / (1000));  // Semi-random number adds 1 each second.
+        cycle = cycle * cyclePerMin / 60;            // Cycles cyclePerMin per minute.
+        randnum += cycle;                            // Make the random number cylce.
+    }
+
+    randnum =
+        (randnum % (maxNum + 1));  // Loops the randomnumber at maxNum. Bassically removes all the numbers above 99.
+    return randnum;  // Now we have a number unique for each bot between 0 and maxNum that increases by cyclePerMin.
+}
+
+/*
+enum GrouperType
+{
+    SOLO = 0,
+    MEMBER = 1,
+    LEADER_2 = 2,
+    LEADER_3 = 3,
+    LEADER_4 = 4,
+    LEADER_5 = 5
+};
+*/
+
+GrouperType PlayerbotAI::GetGrouperType()
+{
+    uint32 grouperNumber = GetFixedBotNumer(100, 0);
+
+    if (grouperNumber < 20 && !HasRealPlayerMaster())
+        return GrouperType::SOLO;
+
+    if (grouperNumber < 80)
+        return GrouperType::MEMBER;
+
+    if (grouperNumber < 85)
+        return GrouperType::LEADER_2;
+
+    if (grouperNumber < 90)
+        return GrouperType::LEADER_3;
+
+    if (grouperNumber < 95)
+        return GrouperType::LEADER_4;
+
+    return GrouperType::LEADER_5;
+}
+
+GuilderType PlayerbotAI::GetGuilderType()
+{
+    uint32 grouperNumber = GetFixedBotNumer(100, 0);
+
+    if (grouperNumber < 20 && !HasRealPlayerMaster())
+        return GuilderType::SOLO;
+
+    if (grouperNumber < 30)
+        return GuilderType::TINY;
+
+    if (grouperNumber < 40)
+        return GuilderType::SMALL;
+
+    if (grouperNumber < 60)
+        return GuilderType::MEDIUM;
+
+    if (grouperNumber < 80)
+        return GuilderType::LARGE;
+
+    return GuilderType::VERY_LARGE;
+}
+
+bool PlayerbotAI::HasPlayerNearby(WorldPosition* pos, float range)
+{
+    float sqRange = range * range;
+    bool nearPlayer = false;
+    for (auto& player : sRandomPlayerbotMgr->GetPlayers())
+    {
+        if (!player->IsGameMaster() || player->isGMVisible())
+        {
+            if (player->GetMapId() != bot->GetMapId())
+                continue;
+
+            if (pos->sqDistance(WorldPosition(player)) < sqRange)
+                nearPlayer = true;
+
+            // if player is far check farsight/cinematic camera
+            WorldObject* viewObj = player->GetViewpoint();
+            if (viewObj && viewObj != player)
+            {
+                if (pos->sqDistance(WorldPosition(viewObj)) < sqRange)
+                    nearPlayer = true;
+            }
+        }
+    }
+
+    return nearPlayer;
+}
+
+bool PlayerbotAI::HasPlayerNearby(float range)
+{
+    WorldPosition botPos(bot);
+    return HasPlayerNearby(&botPos, range);
+};
+
+bool PlayerbotAI::HasManyPlayersNearby(uint32 trigerrValue, float range)
+{
+    float sqRange = range * range;
+    uint32 found = 0;
+
+    for (auto& player : sRandomPlayerbotMgr->GetPlayers())
+    {
+        if ((!player->IsGameMaster() || player->isGMVisible()) && sServerFacade->GetDistance2d(player, bot) < sqRange)
+        {
+            found++;
+
+            if (found >= trigerrValue)
+                return true;
+        }
+    }
+
+    return false;
+}
+
+inline bool HasRealPlayers(Map* map)
+{
+    Map::PlayerList const& players = map->GetPlayers();
+    if (players.IsEmpty())
+    {
+        ret = AiFactory::GetPlayerSpecTab(player);
     switch (player->getClass())
     {
         case CLASS_DEATH_KNIGHT:
