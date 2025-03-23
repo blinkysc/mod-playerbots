@@ -388,7 +388,8 @@ public:
     PlayerbotAI();
     PlayerbotAI(Player* bot);
     virtual ~PlayerbotAI();
-
+    
+    void SetNextCheckDelay(uint32 delay);
     void UpdateAI(uint32 elapsed, bool minimal = false) override;
     void UpdateAIInternal(uint32 elapsed, bool minimal = false) override;
 
@@ -596,9 +597,6 @@ public:
     NewRpgInfo rpgInfo;
     NewRpgStatistic rpgStatistic;
     std::unordered_set<uint32> lowPriorityQuest;
-
-    // Added for thread safety
-    void SetNextCheckDelay(uint32 delay);
 
 private:
     static void _fillGearScoreData(Player* player, Item* item, std::vector<uint32>* gearScore, uint32& twoHandScore,
