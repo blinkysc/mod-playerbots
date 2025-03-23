@@ -16,7 +16,7 @@ public:
     PlayerbotAIBase(bool isBotAI);
 
     bool CanUpdateAI();
-    void SetNextCheckDelay(uint32 const delay);
+    virtual void SetNextCheckDelay(uint32 const delay);
     void IncreaseNextCheckDelay(uint32 delay);
     void YieldThread(uint32 delay = sPlayerbotAIConfig->reactDelay);
     virtual void UpdateAI(uint32 elapsed, bool minimal = false);
