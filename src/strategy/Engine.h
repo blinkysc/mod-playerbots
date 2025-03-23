@@ -7,6 +7,8 @@
 #define _PLAYERBOT_ENGINE_H
 
 #include <map>
+#include <mutex>
+#include <shared_mutex>
 
 #include "Multiplier.h"
 #include "PlayerbotAIAware.h"
@@ -51,12 +53,21 @@ public:
     void After(Action* action, bool executed, Event event) override;
     bool OverrideResult(Action* action, bool executed, Event event) override;
 
-    void Add(ActionExecutionListener* listener) { listeners.push_back(listener); }
+    void Add(ActionExecutionListener* listener) 
+    { 
+        std::lock_guard<std::mutex> lock(listenersMutex);
+        listeners.push_back(listener); 
+    }
 
-    void Remove(ActionExecutionListener* listener) { listeners.remove(listener); }
+    void Remove(ActionExecutionListener* listener) 
+    { 
+        std::lock_guard<std::mutex> lock(listenersMutex);
+        listeners.remove(listener); 
+    }
 
 private:
     std::list<ActionExecutionListener*> listeners;
+    std::mutex listenersMutex;
 };
 
 class Engine : public PlayerbotAIAware
@@ -76,7 +87,11 @@ public:
     std::vector<std::string> GetStrategies();
     bool ContainsStrategy(StrategyType type);
     void ChangeStrategy(std::string const names);
-    std::string const GetLastAction() { return lastAction; }
+    std::string const GetLastAction() 
+    { 
+        std::shared_lock<std::shared_mutex> lock(lastActionMutex);
+        return lastAction; 
+    }
 
     virtual bool DoNextAction(Unit*, uint32 depth = 0, bool minimal = false);
     ActionResult ExecuteAction(std::string const name, Event event = Event(), std::string const qualifier = "");
@@ -84,7 +99,11 @@ public:
     void AddActionExecutionListener(ActionExecutionListener* listener) { actionExecutionListeners.Add(listener); }
 
     void removeActionExecutionListener(ActionExecutionListener* listener) { actionExecutionListeners.Remove(listener); }
-    bool HasStrategyType(StrategyType type) { return strategyTypeMask & type; }
+    bool HasStrategyType(StrategyType type) 
+    { 
+        std::shared_lock<std::shared_mutex> lock(strategyMutex);
+        return strategyTypeMask & type; 
+    }
     virtual ~Engine(void);
 
     bool testMode;
@@ -104,6 +123,9 @@ private:
     void LogValues();
 
     ActionExecutionListeners actionExecutionListeners;
+    std::mutex queueMutex;
+    std::shared_mutex strategyMutex;
+    std::shared_mutex lastActionMutex;
 
 protected:
     Queue queue;
