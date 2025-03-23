@@ -8,6 +8,9 @@
 
 #include <queue>
 #include <stack>
+#include <atomic>
+#include <mutex>
+#include <shared_mutex>
 
 #include "Chat.h"
 #include "ChatFilter.h"
@@ -347,6 +350,7 @@ public:
 private:
     std::map<uint16, std::string> handlers;
     std::stack<WorldPacket> queue;
+    std::mutex queueMutex;
 };
 
 class ChatCommandHolder
@@ -362,10 +366,14 @@ public:
     {
     }
 
-    const std::string& GetCommand() { return command; }
-    Player* GetOwner() { return owner; }
-    uint32& GetType() { return type; }
-    time_t& GetTime() { return time; }
+    const std::string& GetCommand() const { return command; } // Added const here
+    Player* GetOwner() const { return owner; } // Added const here
+    uint32 GetType() const { return type; } // Added const here
+    time_t GetTime() const { return time; } // Added const here
+    
+    // Non-const accessors for modification
+    uint32& GetTypeRef() { return type; }
+    time_t& GetTimeRef() { return time; }
 
 private:
     std::string const command;
@@ -543,14 +551,14 @@ public:
     bool IsSafe(Player* player);
     bool IsSafe(WorldObject* obj);
     ChatChannelSource GetChatChannelSource(Player* bot, uint32 type, std::string channelName);
-
+    
     bool HasCheat(BotCheatMask mask)
     {
-        return ((uint32)mask & (uint32)cheatMask) != 0 ||
+        return ((uint32)mask & (uint32)cheatMask.load(std::memory_order_relaxed)) != 0 ||
                ((uint32)mask & (uint32)sPlayerbotAIConfig->botCheatMask) != 0;
     }
-    BotCheatMask GetCheat() { return cheatMask; }
-    void SetCheat(BotCheatMask mask) { cheatMask = mask; }
+    BotCheatMask GetCheat() { return cheatMask.load(std::memory_order_relaxed); }
+    void SetCheat(BotCheatMask mask) { cheatMask.store(mask, std::memory_order_relaxed); }
 
     void SetMaster(Player* newMaster) { master = newMaster; }
     AiObjectContext* GetAiObjectContext() { return aiObjectContext; }
@@ -589,6 +597,9 @@ public:
     NewRpgStatistic rpgStatistic;
     std::unordered_set<uint32> lowPriorityQuest;
 
+    // Added for thread safety
+    void SetNextCheckDelay(uint32 delay);
+
 private:
     static void _fillGearScoreData(Player* player, Item* item, std::vector<uint32>* gearScore, uint32& twoHandScore,
                                    bool mixed = false);
@@ -608,22 +619,40 @@ protected:
     Engine* engines[BOT_STATE_MAX];
     BotState currentState;
     ChatHelper chatHelper;
+    
+    // Thread-safe containers and their mutexes
     std::list<ChatCommandHolder> chatCommands;
+    std::mutex chatCommandsMutex;
+    
     std::list<ChatQueuedReply> chatReplies;
+    std::mutex chatRepliesMutex;
+    
+    std::map<std::string, time_t> whispers;
+    std::mutex whispersMutex;
+    
+    std::pair<ChatMsg, time_t> currentChat;
+    
     PacketHandlingHelper botOutgoingPacketHandlers;
     PacketHandlingHelper masterIncomingPacketHandlers;
     PacketHandlingHelper masterOutgoingPacketHandlers;
+    
     CompositeChatFilter chatFilter;
     PlayerbotSecurity security;
-    std::map<std::string, time_t> whispers;
-    std::pair<ChatMsg, time_t> currentChat;
+    
+    std::mutex engineMutex;
+    std::mutex activityMutex;
+    
     static std::set<std::string> unsecuredCommands;
-    bool allowActive[MAX_ACTIVITY_TYPE];
-    time_t allowActiveCheckTimer[MAX_ACTIVITY_TYPE];
-    bool inCombat = false;
-    BotCheatMask cheatMask = BotCheatMask::none;
+    
+    std::atomic<bool> allowActive[MAX_ACTIVITY_TYPE];
+    std::atomic<time_t> allowActiveCheckTimer[MAX_ACTIVITY_TYPE];
+    
+    std::atomic<bool> inCombat{false};
+    std::atomic<BotCheatMask> cheatMask{BotCheatMask::none};
+    
     Position jumpDestination = Position();
-    uint32 nextTransportCheck = 0;
+    std::atomic<uint32> nextTransportCheck{0};
+    std::atomic<uint32> nextAICheckDelay{0};
 };
 
 #endif
