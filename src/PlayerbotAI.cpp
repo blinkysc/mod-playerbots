@@ -5,6 +5,7 @@
 
 #include "PlayerbotAI.h"
 
+#include <atomic>
 #include <cmath>
 #include <mutex>
 #include <sstream>
@@ -231,10 +232,11 @@ PlayerbotAI::~PlayerbotAI()
 void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
 {
     // Handle the AI check delay
-    if (nextAICheckDelay > elapsed)
-        nextAICheckDelay -= elapsed;
+    uint32 currentDelay = nextAICheckDelay.load(std::memory_order_relaxed);
+    if (currentDelay > elapsed)
+        nextAICheckDelay.store(currentDelay - elapsed, std::memory_order_relaxed);
     else
-        nextAICheckDelay = 0;
+        nextAICheckDelay.store(0, std::memory_order_relaxed);
 
     // Early return if bot is in invalid state
     if (!bot || !bot->IsInWorld() || !bot->GetSession() || bot->GetSession()->isLogingOut() ||
@@ -416,17 +418,20 @@ void PlayerbotAI::UpdateAIInternal([[maybe_unused]] uint32 elapsed, bool minimal
     ExternalEventHelper helper(aiObjectContext);
 
     // chat replies
-    for (auto it = chatReplies.begin(); it != chatReplies.end();)
     {
-        time_t checkTime = it->m_time;
-        if (checkTime && time(0) < checkTime)
+        std::lock_guard<std::mutex> lock(chatRepliesMutex);
+        for (auto it = chatReplies.begin(); it != chatReplies.end();)
         {
-            ++it;
-            continue;
-        }
+            time_t checkTime = it->m_time;
+            if (checkTime && time(0) < checkTime)
+            {
+                ++it;
+                continue;
+            }
 
-        ChatReplyAction::ChatReplyDo(bot, it->m_type, it->m_guid1, it->m_guid2, it->m_msg, it->m_chanName, it->m_name);
-        it = chatReplies.erase(it);
+            ChatReplyAction::ChatReplyDo(bot, it->m_type, it->m_guid1, it->m_guid2, it->m_msg, it->m_chanName, it->m_name);
+            it = chatReplies.erase(it);
+        }
     }
 
     HandleCommands();
@@ -486,24 +491,35 @@ void PlayerbotAI::UpdateAIInternal([[maybe_unused]] uint32 elapsed, bool minimal
 void PlayerbotAI::HandleCommands()
 {
     ExternalEventHelper helper(aiObjectContext);
-    for (auto it = chatCommands.begin(); it != chatCommands.end();)
+    std::vector<ChatCommandHolder> commandsToProcess;
+    
+    // First, get commands that are ready to be processed
     {
-        time_t& checkTime = it->GetTime();
-        if (checkTime && time(0) < checkTime)
+        std::lock_guard<std::mutex> lock(chatCommandsMutex);
+        for (auto it = chatCommands.begin(); it != chatCommands.end();)
         {
-            ++it;
-            continue;
+            time_t& checkTime = it->GetTimeRef(); // Use the non-const reference accessor
+            if (checkTime && time(0) < checkTime)
+            {
+                ++it;
+                continue;
+            }
+            
+            // Move to local vector for processing outside the lock
+            commandsToProcess.push_back(*it);
+            it = chatCommands.erase(it);
         }
-
-        const std::string& command = it->GetCommand();
-        Player* owner = it->GetOwner();
-        if (!helper.ParseChatCommand(command, owner) && it->GetType() == CHAT_MSG_WHISPER)
+    }
+    
+    // Now process commands outside the lock
+    for (const auto& cmd : commandsToProcess)
+    {
+        const std::string& command = cmd.GetCommand();
+        Player* owner = cmd.GetOwner();
+        if (!helper.ParseChatCommand(command, owner) && cmd.GetType() == CHAT_MSG_WHISPER)
         {
-            // ostringstream out; out << "Unknown command " << command;
-            // TellPlayer(out);
-            // helper.ParseChatCommand("help");
+            // Handle unknown command logic
         }
-        it = chatCommands.erase(it);
     }
 }
 
@@ -587,6 +603,7 @@ void PlayerbotAI::HandleCommand(uint32 type, const std::string& text, Player& fr
     if (type == CHAT_MSG_RAID_WARNING && filtered.find(bot->GetName()) != std::string::npos &&
         filtered.find("award") == std::string::npos)
     {
+	std::lock_guard<std::mutex> lock(chatCommandsMutex);
         chatCommands.push_back(ChatCommandHolder("warning", &fromPlayer, type));
         return;
     }
@@ -725,10 +742,11 @@ void PlayerbotAI::Reset(bool full)
     if (bot->HasUnitState(UNIT_STATE_IN_FLIGHT))
         return;
 
+    std::lock_guard<std::mutex> lock(engineMutex);
+    
+    // Cancel logout if needed
     WorldSession* botWorldSessionPtr = bot->GetSession();
     bool logout = botWorldSessionPtr->ShouldLogOut(time(nullptr));
-
-    // cancel logout
     if (!logout && bot->GetSession()->isLogingOut())
     {
         WorldPackets::Character::LogoutCancel data = WorldPacket(CMSG_LOGOUT_CANCEL);
@@ -736,11 +754,17 @@ void PlayerbotAI::Reset(bool full)
         TellMaster("Logout cancelled!");
     }
 
+    // Reset engine state
     currentEngine = engines[BOT_STATE_NON_COMBAT];
     currentState = BOT_STATE_NON_COMBAT;
-    nextAICheckDelay = 0;
-    whispers.clear();
+    nextAICheckDelay.store(0, std::memory_order_relaxed);
+    
+    {
+        std::lock_guard<std::mutex> whispersLock(whispersMutex);
+        whispers.clear();
+    }
 
+    // Reset AI context values
     aiObjectContext->GetValue<Unit*>("old target")->Set(nullptr);
     aiObjectContext->GetValue<Unit*>("current target")->Set(nullptr);
     aiObjectContext->GetValue<GuidVector>("prioritized targets")->Reset();
@@ -755,6 +779,7 @@ void PlayerbotAI::Reset(bool full)
 
     if (full)
     {
+        // Additional full reset operations
         aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(nullptr);
         aiObjectContext->GetValue<LastMovement&>("last area trigger")->Get().Set(nullptr);
         aiObjectContext->GetValue<LastMovement&>("last taxi")->Get().Set(nullptr);
@@ -1233,13 +1258,15 @@ void PlayerbotAI::HandleMasterOutgoingPacket(WorldPacket const& packet)
 
 void PlayerbotAI::ChangeEngine(BotState type)
 {
+    std::lock_guard<std::mutex> lock(engineMutex);
+    
     Engine* engine = engines[type];
 
     if (currentEngine != engine)
     {
         currentEngine = engine;
         currentState = type;
-        ReInitCurrentEngine();
+        currentEngine->Init();
 
         switch (type)
         {
@@ -1458,7 +1485,7 @@ void PlayerbotAI::DoNextAction(bool min)
 
 void PlayerbotAI::ReInitCurrentEngine()
 {
-    // InterruptSpell();
+    std::lock_guard<std::mutex> lock(engineMutex);
     currentEngine->Init();
 }
 
@@ -2668,10 +2695,9 @@ bool IsRealAura(Player* bot, AuraEffect const* aurEff, Unit const* unit)
     return false;
 }
 
-bool PlayerbotAI::HasAura(std::string const name, Unit* unit, bool maxStack, bool checkIsOwner, int maxAuraAmount,
-                          bool checkDuration)
+bool PlayerbotAI::HasAura(std::string const name, Unit* unit, bool maxStack, bool checkIsOwner, int maxAuraAmount, bool checkDuration)
 {
-    if (!unit)
+    if (!unit || !unit->IsInWorld())
         return false;
 
     std::wstring wnamepart;
@@ -2680,7 +2706,7 @@ bool PlayerbotAI::HasAura(std::string const name, Unit* unit, bool maxStack, boo
 
     wstrToLower(wnamepart);
 
-    int auraAmount = 0;
+    std::atomic<int> auraAmount{0};
 
     // Iterate through all aura types
     for (uint32 auraType = SPELL_AURA_BIND_SIGHT; auraType < TOTAL_AURAS; auraType++)
@@ -4321,15 +4347,24 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
 
 bool PlayerbotAI::AllowActivity(ActivityType activityType, bool checkNow)
 {
-    if (!allowActiveCheckTimer[activityType])
-        allowActiveCheckTimer[activityType] = time(nullptr);
+    time_t currentTime = time(nullptr);
 
-    if (!checkNow && time(nullptr) < (allowActiveCheckTimer[activityType] + 5))
-        return allowActive[activityType];
+    // Load the last check time atomically
+    time_t lastCheck = allowActiveCheckTimer[activityType].load(std::memory_order_relaxed);
+    if (!lastCheck)
+        allowActiveCheckTimer[activityType].store(currentTime, std::memory_order_relaxed);
 
+    // If not enough time has passed and we don't need to check now, return cached result
+    if (!checkNow && currentTime < (lastCheck + 5))
+        return allowActive[activityType].load(std::memory_order_relaxed);
+
+    // Calculate the new allow status
     bool allowed = AllowActive(activityType);
-    allowActive[activityType] = allowed;
-    allowActiveCheckTimer[activityType] = time(nullptr);
+
+    // Store results atomically
+    allowActive[activityType].store(allowed, std::memory_order_relaxed);
+    allowActiveCheckTimer[activityType].store(currentTime, std::memory_order_relaxed);
+
     return allowed;
 }
 
@@ -5512,7 +5547,11 @@ bool PlayerbotAI::IsInRealGuild()
     return IsRealGuild(bot->GetGuildId());
 }
 
-void PlayerbotAI::QueueChatResponse(const ChatQueuedReply chatReply) { chatReplies.push_back(std::move(chatReply)); }
+void PlayerbotAI::QueueChatResponse(const ChatQueuedReply chatReply)
+{
+    std::lock_guard<std::mutex> lock(chatRepliesMutex);
+    chatReplies.push_back(std::move(chatReply));
+}
 
 bool PlayerbotAI::EqualLowercaseName(std::string s1, std::string s2)
 {
