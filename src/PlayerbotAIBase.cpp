@@ -5,6 +5,7 @@
 
 #include "PlayerbotAIBase.h"
 
+#include <atomic>
 #include "Playerbots.h"
 
 PlayerbotAIBase::PlayerbotAIBase(bool isBotAI) : nextAICheckDelay(0), _isBotAI(isBotAI) {}
@@ -33,7 +34,8 @@ void PlayerbotAIBase::SetNextCheckDelay(uint32 const delay)
     // if (nextAICheckDelay < delay)
     // LOG_DEBUG("playerbots", "Setting lesser delay {} -> {}", nextAICheckDelay, delay);
 
-    nextAICheckDelay = delay;
+    //nextAICheckDelay = delay;
+    nextAICheckDelay.store(delay, std::memory_order_relaxed);
 
     // if (nextAICheckDelay > sPlayerbotAIConfig->globalCoolDown)
     // LOG_DEBUG("playerbots",  "std::set next check delay: {}", nextAICheckDelay);
