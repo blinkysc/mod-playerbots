@@ -88,6 +88,7 @@ The [Playerbots Wiki](https://github.com/liyunfan1223/mod-playerbots/wiki) conta
 - **Why aren't my bots casting spells?** Please make sure that the necessary English DBC file (enUS) is present.
 - **What platforms are supported?** We support Ubuntu, Windows, and macOS. Other Linux distros may work, but will not receive support.
 - **Why isn't my source compiling?** Please [check the build status of our CI](https://github.com/liyunfan1223/mod-playerbots/actions). If the latest build is failing, rever to the last successful commit until we address the issue.
+- **Is the module stable with many real players?** The module is currently designed and optimized for servers with 1 to a few real players. Running servers with dozens or hundreds of real players may lead to stability issues, regardless of the number of bots. This is a known limitation of the current implementation.
 
 ## Addons
 
