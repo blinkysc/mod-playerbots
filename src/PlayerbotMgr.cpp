@@ -27,7 +27,9 @@
 #include "PlayerbotAIConfig.h"
 #include "PlayerbotDbStore.h"
 #include "PlayerbotFactory.h"
+#include "PlayerbotOperations.h"
 #include "PlayerbotSecurity.h"
+#include "PlayerbotWorldThreadProcessor.h"
 #include "Playerbots.h"
 #include "RandomPlayerbotMgr.h"
 #include "SharedDefines.h"
@@ -549,6 +551,7 @@ void PlayerbotHolder::OnBotLogin(Player* const bot)
 
     botAI->TellMaster("Hello!", PLAYERBOT_SECURITY_TALK);
 
+    // Queue group operations for world thread
     if (master && master->GetGroup() && !group)
     {
         Group* mgroup = master->GetGroup();
@@ -556,24 +559,29 @@ void PlayerbotHolder::OnBotLogin(Player* const bot)
         {
             if (!mgroup->isRaidGroup() && !mgroup->isLFGGroup() && !mgroup->isBGGroup() && !mgroup->isBFGroup())
             {
-                mgroup->ConvertToRaid();
+                // Queue ConvertToRaid operation
+                auto convertOp = std::make_unique<GroupConvertToRaidOperation>(master->GetGUID());
+                sPlayerbotWorldProcessor->QueueOperation(std::move(convertOp));
             }
             if (mgroup->isRaidGroup())
             {
-                mgroup->AddMember(bot);
+                // Queue AddMember operation
+                auto addOp = std::make_unique<GroupInviteOperation>(master->GetGUID(), bot->GetGUID());
+                sPlayerbotWorldProcessor->QueueOperation(std::move(addOp));
             }
         }
         else
         {
-            mgroup->AddMember(bot);
+            // Queue AddMember operation
+            auto addOp = std::make_unique<GroupInviteOperation>(master->GetGUID(), bot->GetGUID());
+            sPlayerbotWorldProcessor->QueueOperation(std::move(addOp));
         }
     }
     else if (master && !group)
     {
-        Group* newGroup = new Group();
-        newGroup->Create(master);
-        sGroupMgr->AddGroup(newGroup);
-        newGroup->AddMember(bot);
+        // Queue group creation and AddMember operation
+        auto inviteOp = std::make_unique<GroupInviteOperation>(master->GetGUID(), bot->GetGUID());
+        sPlayerbotWorldProcessor->QueueOperation(std::move(inviteOp));
     }
     // if (master)
     // {
