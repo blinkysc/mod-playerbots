@@ -20,7 +20,7 @@
  * Thread Safety:
  * - The constructor and data members must be thread-safe (use copies, not pointers)
  * - Execute() is called in the world thread and can safely perform thread-unsafe operations
- * - Subclasses must not store raw pointers to game objects (use ObjectGuid instead)
+ * - Subclasses must not store raw pointers to (core/world thread) game object (use ObjectGuid instead)
  */
 class PlayerbotOperation
 {
