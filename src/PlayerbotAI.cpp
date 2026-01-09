@@ -61,6 +61,13 @@
 #include "UpdateTime.h"
 #include "Vehicle.h"
 
+// FSM includes
+#include "fsm/FSMEngine.h"
+#include "fsm/strategies/WarriorExecutors.h"
+#include "fsm/strategies/WarriorFuryTable.h"
+#include "fsm/strategies/WarriorArmsTable.h"
+#include "fsm/strategies/WarriorProtTable.h"
+
 const int SPELL_TITAN_GRIP = 49152;
 
 std::vector<std::string> PlayerbotAI::dispel_whitelist = {
@@ -113,6 +120,8 @@ PlayerbotAI::PlayerbotAI()
       accountId(0),
       aiObjectContext(nullptr),
       currentEngine(nullptr),
+      fsmEngine(nullptr),
+      useFSM(false),
       currentState(BOT_STATE_NON_COMBAT),
       chatHelper(this),
       chatFilter(this),
@@ -132,6 +141,8 @@ PlayerbotAI::PlayerbotAI(Player* bot)
     : PlayerbotAIBase(true),
       bot(bot),
       master(nullptr),
+      fsmEngine(nullptr),
+      useFSM(false),
       chatHelper(this),
       chatFilter(this),
       security(bot)  // reorder args - whipowill
@@ -157,6 +168,9 @@ PlayerbotAI::PlayerbotAI(Player* bot)
         ApplyInstanceStrategies(bot->GetMapId());
     currentEngine = engines[BOT_STATE_NON_COMBAT];
     currentState = BOT_STATE_NON_COMBAT;
+
+    // Initialize FSM engine (if enabled in config)
+    InitializeFSMEngine();
 
     masterIncomingPacketHandlers.AddHandler(CMSG_GAMEOBJ_USE, "use game object");
     masterIncomingPacketHandlers.AddHandler(CMSG_AREATRIGGER, "area trigger");
@@ -229,11 +243,70 @@ PlayerbotAI::~PlayerbotAI()
             delete engines[i];
     }
 
+    if (fsmEngine)
+        delete fsmEngine;
+
     if (aiObjectContext)
         delete aiObjectContext;
 
     if (bot)
         sPlayerbotsMgr->RemovePlayerBotData(bot->GetGUID(), true);
+}
+
+void PlayerbotAI::InitializeFSMEngine()
+{
+    // Check config option first
+    if (!sPlayerbotAIConfig->useFSMEngine)
+    {
+        useFSM = false;
+        return;
+    }
+
+    if (fsmEngine)
+        return;
+
+    fsmEngine = new FSMEngine(this);
+
+    // Register class-specific actions and add strategy based on spec
+    uint8 botClass = bot->getClass();
+    int specTab = AiFactory::GetPlayerSpecTab(bot);
+
+    switch (botClass)
+    {
+        case CLASS_WARRIOR:
+            RegisterWarriorActions(fsmEngine);
+            // Add strategy table based on spec
+            switch (specTab)
+            {
+                case WARRIOR_TAB_ARMS:
+                    fsmEngine->AddStrategy(&WarriorArmsStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Arms Warrior FSM for bot {}", bot->GetName());
+                    break;
+                case WARRIOR_TAB_FURY:
+                    fsmEngine->AddStrategy(&WarriorFuryStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Fury Warrior FSM for bot {}", bot->GetName());
+                    break;
+                case WARRIOR_TAB_PROTECTION:
+                    fsmEngine->AddStrategy(&WarriorProtStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Protection Warrior FSM for bot {}", bot->GetName());
+                    break;
+                default:
+                    // Default to Fury if no talents
+                    fsmEngine->AddStrategy(&WarriorFuryStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Warrior FSM (default Fury) for bot {}", bot->GetName());
+                    break;
+            }
+            break;
+        // TODO: Add other classes as they are implemented
+        default:
+            LOG_DEBUG("playerbots", "FSM: Class {} not yet supported for FSM, disabling", botClass);
+            useFSM = false;
+            return;
+    }
+
+    // Enable FSM for supported classes
+    useFSM = true;
+    LOG_INFO("playerbots", "FSM: Enabled for bot {} (class {}, spec {})", bot->GetName(), botClass, specTab);
 }
 
 void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
@@ -1449,7 +1522,15 @@ void PlayerbotAI::DoNextAction(bool min)
 
     bool minimal = !AllowActivity();
 
-    currentEngine->DoNextAction(nullptr, 0, (minimal || min));
+    // Use FSM engine if enabled, otherwise fall back to legacy engine
+    if (useFSM && fsmEngine)
+    {
+        fsmEngine->DoNextAction(nullptr, 0, minimal || min);
+    }
+    else
+    {
+        currentEngine->DoNextAction(nullptr, 0, (minimal || min));
+    }
 
     if (minimal)
     {

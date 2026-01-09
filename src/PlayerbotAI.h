@@ -31,6 +31,7 @@ class AiObjectContext;
 class Creature;
 class Engine;
 class ExternalEventHelper;
+class FSMEngine;
 class Gameobject;
 class Item;
 class ObjectGuid;
@@ -571,6 +572,10 @@ public:
     void SetMaster(Player* newMaster) { master = newMaster; }
     AiObjectContext* GetAiObjectContext() { return aiObjectContext; }
     BotValueCache& GetValueCache() { return valueCache; }
+    FSMEngine* GetFSMEngine() { return fsmEngine; }
+    bool IsFSMEnabled() const { return useFSM; }
+    void SetFSMEnabled(bool enabled) { useFSM = enabled; }
+    void InitializeFSMEngine();
     ChatHelper* GetChatHelper() { return &chatHelper; }
     bool IsOpposing(Player* player);
     static bool IsOpposing(uint8 race1, uint8 race2);
@@ -635,6 +640,8 @@ protected:
     BotValueCache valueCache;
     Engine* currentEngine;
     Engine* engines[BOT_STATE_MAX];
+    FSMEngine* fsmEngine;
+    bool useFSM;
     BotState currentState;
     ChatHelper chatHelper;
     std::list<ChatCommandHolder> chatCommands;
