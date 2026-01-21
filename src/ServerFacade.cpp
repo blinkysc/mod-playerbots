@@ -47,7 +47,8 @@ void ServerFacade::SetFacingTo(Player* bot, WorldObject* wo, bool force)
     // else
     // {
     bot->SetOrientation(angle);
-    bot->SendMovementFlagUpdate();
+    if (!bot->IsRooted())
+        bot->SendMovementFlagUpdate();
     // }
 }
 

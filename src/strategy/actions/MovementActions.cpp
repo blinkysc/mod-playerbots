@@ -1026,7 +1026,7 @@ void MovementAction::UpdateMovementState()
         if (wasMovementRestricted)
             movementFlagsUpdated = true; // refresh movement state to ensure animations play correctly
 
-        if (movementFlagsUpdated)
+        if (movementFlagsUpdated && !bot->IsRooted())
             bot->SendMovementFlagUpdate();
     }
 

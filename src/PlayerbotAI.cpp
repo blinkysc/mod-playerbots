@@ -67,6 +67,42 @@
 #include "fsm/strategies/WarriorFuryTable.h"
 #include "fsm/strategies/WarriorArmsTable.h"
 #include "fsm/strategies/WarriorProtTable.h"
+#include "fsm/strategies/RogueExecutors.h"
+#include "fsm/strategies/RogueCombatTable.h"
+#include "fsm/strategies/RogueAssassinationTable.h"
+#include "fsm/strategies/RogueSubtletyTable.h"
+#include "fsm/strategies/PaladinExecutors.h"
+#include "fsm/strategies/PaladinHolyTable.h"
+#include "fsm/strategies/PaladinProtTable.h"
+#include "fsm/strategies/PaladinRetTable.h"
+#include "fsm/strategies/DKExecutors.h"
+#include "fsm/strategies/DKBloodTable.h"
+#include "fsm/strategies/DKFrostTable.h"
+#include "fsm/strategies/DKUnholyTable.h"
+#include "fsm/strategies/MageExecutors.h"
+#include "fsm/strategies/MageArcaneTable.h"
+#include "fsm/strategies/MageFireTable.h"
+#include "fsm/strategies/MageFrostTable.h"
+#include "fsm/strategies/HunterExecutors.h"
+#include "fsm/strategies/HunterBMTable.h"
+#include "fsm/strategies/HunterMMTable.h"
+#include "fsm/strategies/HunterSurvivalTable.h"
+#include "fsm/strategies/PriestExecutors.h"
+#include "fsm/strategies/PriestDiscTable.h"
+#include "fsm/strategies/PriestHolyTable.h"
+#include "fsm/strategies/PriestShadowTable.h"
+#include "fsm/strategies/WarlockExecutors.h"
+#include "fsm/strategies/WarlockAfflictionTable.h"
+#include "fsm/strategies/WarlockDemoTable.h"
+#include "fsm/strategies/WarlockDestroTable.h"
+#include "fsm/strategies/DruidExecutors.h"
+#include "fsm/strategies/DruidBalanceTable.h"
+#include "fsm/strategies/DruidFeralTable.h"
+#include "fsm/strategies/DruidRestoTable.h"
+#include "fsm/strategies/ShamanExecutors.h"
+#include "fsm/strategies/ShamanElementalTable.h"
+#include "fsm/strategies/ShamanEnhanceTable.h"
+#include "fsm/strategies/ShamanRestoTable.h"
 
 const int SPELL_TITAN_GRIP = 49152;
 
@@ -297,7 +333,223 @@ void PlayerbotAI::InitializeFSMEngine()
                     break;
             }
             break;
-        // TODO: Add other classes as they are implemented
+        case CLASS_ROGUE:
+            RegisterRogueActions(fsmEngine);
+            // Add strategy table based on spec
+            switch (specTab)
+            {
+                case ROGUE_TAB_ASSASSINATION:
+                    fsmEngine->AddStrategy(&RogueAssassinationStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Assassination Rogue FSM for bot {}", bot->GetName());
+                    break;
+                case ROGUE_TAB_COMBAT:
+                    fsmEngine->AddStrategy(&RogueCombatStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Combat Rogue FSM for bot {}", bot->GetName());
+                    break;
+                case ROGUE_TAB_SUBTLETY:
+                    fsmEngine->AddStrategy(&RogueSubtletyStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Subtlety Rogue FSM for bot {}", bot->GetName());
+                    break;
+                default:
+                    // Default to Combat if no talents
+                    fsmEngine->AddStrategy(&RogueCombatStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Rogue FSM (default Combat) for bot {}", bot->GetName());
+                    break;
+            }
+            break;
+        case CLASS_PALADIN:
+            RegisterPaladinActions(fsmEngine);
+            // Add strategy table based on spec
+            switch (specTab)
+            {
+                case PALADIN_TAB_HOLY:
+                    fsmEngine->AddStrategy(&PaladinHolyStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Holy Paladin FSM for bot {}", bot->GetName());
+                    break;
+                case PALADIN_TAB_PROTECTION:
+                    fsmEngine->AddStrategy(&PaladinProtectionStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Protection Paladin FSM for bot {}", bot->GetName());
+                    break;
+                case PALADIN_TAB_RETRIBUTION:
+                    fsmEngine->AddStrategy(&PaladinRetributionStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Retribution Paladin FSM for bot {}", bot->GetName());
+                    break;
+                default:
+                    // Default to Retribution if no talents
+                    fsmEngine->AddStrategy(&PaladinRetributionStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Paladin FSM (default Retribution) for bot {}", bot->GetName());
+                    break;
+            }
+            break;
+        case CLASS_DEATH_KNIGHT:
+            RegisterDeathKnightActions(fsmEngine);
+            // Add strategy table based on spec
+            switch (specTab)
+            {
+                case DEATH_KNIGHT_TAB_BLOOD:
+                    fsmEngine->AddStrategy(&DKBloodStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Blood Death Knight FSM for bot {}", bot->GetName());
+                    break;
+                case DEATH_KNIGHT_TAB_FROST:
+                    fsmEngine->AddStrategy(&DKFrostStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Frost Death Knight FSM for bot {}", bot->GetName());
+                    break;
+                case DEATH_KNIGHT_TAB_UNHOLY:
+                    fsmEngine->AddStrategy(&DKUnholyStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Unholy Death Knight FSM for bot {}", bot->GetName());
+                    break;
+                default:
+                    // Default to Frost if no talents
+                    fsmEngine->AddStrategy(&DKFrostStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Death Knight FSM (default Frost) for bot {}", bot->GetName());
+                    break;
+            }
+            break;
+        case CLASS_MAGE:
+            RegisterMageActions(fsmEngine);
+            // Add strategy table based on spec
+            switch (specTab)
+            {
+                case MAGE_TAB_ARCANE:
+                    fsmEngine->AddStrategy(&MageArcaneStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Arcane Mage FSM for bot {}", bot->GetName());
+                    break;
+                case MAGE_TAB_FIRE:
+                    fsmEngine->AddStrategy(&MageFireStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Fire Mage FSM for bot {}", bot->GetName());
+                    break;
+                case MAGE_TAB_FROST:
+                    fsmEngine->AddStrategy(&MageFrostStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Frost Mage FSM for bot {}", bot->GetName());
+                    break;
+                default:
+                    // Default to Frost if no talents
+                    fsmEngine->AddStrategy(&MageFrostStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Mage FSM (default Frost) for bot {}", bot->GetName());
+                    break;
+            }
+            break;
+        case CLASS_HUNTER:
+            RegisterHunterActions(fsmEngine);
+            // Add strategy table based on spec
+            switch (specTab)
+            {
+                case HUNTER_TAB_BEAST_MASTERY:
+                    fsmEngine->AddStrategy(&HunterBMStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Beast Mastery Hunter FSM for bot {}", bot->GetName());
+                    break;
+                case HUNTER_TAB_MARKSMANSHIP:
+                    fsmEngine->AddStrategy(&HunterMMStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Marksmanship Hunter FSM for bot {}", bot->GetName());
+                    break;
+                case HUNTER_TAB_SURVIVAL:
+                    fsmEngine->AddStrategy(&HunterSurvivalStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Survival Hunter FSM for bot {}", bot->GetName());
+                    break;
+                default:
+                    // Default to Beast Mastery if no talents
+                    fsmEngine->AddStrategy(&HunterBMStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Hunter FSM (default BM) for bot {}", bot->GetName());
+                    break;
+            }
+            break;
+        case CLASS_PRIEST:
+            RegisterPriestActions(fsmEngine);
+            // Add strategy table based on spec
+            switch (specTab)
+            {
+                case PRIEST_TAB_DISCIPLINE:
+                    fsmEngine->AddStrategy(&PriestDiscStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Discipline Priest FSM for bot {}", bot->GetName());
+                    break;
+                case PRIEST_TAB_HOLY:
+                    fsmEngine->AddStrategy(&PriestHolyStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Holy Priest FSM for bot {}", bot->GetName());
+                    break;
+                case PRIEST_TAB_SHADOW:
+                    fsmEngine->AddStrategy(&PriestShadowStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Shadow Priest FSM for bot {}", bot->GetName());
+                    break;
+                default:
+                    // Default to Shadow if no talents
+                    fsmEngine->AddStrategy(&PriestShadowStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Priest FSM (default Shadow) for bot {}", bot->GetName());
+                    break;
+            }
+            break;
+        case CLASS_WARLOCK:
+            RegisterWarlockActions(fsmEngine);
+            // Add strategy table based on spec
+            switch (specTab)
+            {
+                case WARLOCK_TAB_AFFLICTION:
+                    fsmEngine->AddStrategy(&WarlockAfflictionStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Affliction Warlock FSM for bot {}", bot->GetName());
+                    break;
+                case WARLOCK_TAB_DEMONOLOGY:
+                    fsmEngine->AddStrategy(&WarlockDemoStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Demonology Warlock FSM for bot {}", bot->GetName());
+                    break;
+                case WARLOCK_TAB_DESTRUCTION:
+                    fsmEngine->AddStrategy(&WarlockDestroStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Destruction Warlock FSM for bot {}", bot->GetName());
+                    break;
+                default:
+                    // Default to Affliction if no talents
+                    fsmEngine->AddStrategy(&WarlockAfflictionStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Warlock FSM (default Affliction) for bot {}", bot->GetName());
+                    break;
+            }
+            break;
+        case CLASS_DRUID:
+            RegisterDruidActions(fsmEngine);
+            // Add strategy table based on spec
+            switch (specTab)
+            {
+                case DRUID_TAB_BALANCE:
+                    fsmEngine->AddStrategy(&DruidBalanceStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Balance Druid FSM for bot {}", bot->GetName());
+                    break;
+                case DRUID_TAB_FERAL:
+                    fsmEngine->AddStrategy(&DruidFeralStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Feral Druid FSM for bot {}", bot->GetName());
+                    break;
+                case DRUID_TAB_RESTORATION:
+                    fsmEngine->AddStrategy(&DruidRestoStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Restoration Druid FSM for bot {}", bot->GetName());
+                    break;
+                default:
+                    // Default to Feral if no talents
+                    fsmEngine->AddStrategy(&DruidFeralStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Druid FSM (default Feral) for bot {}", bot->GetName());
+                    break;
+            }
+            break;
+        case CLASS_SHAMAN:
+            RegisterShamanActions(fsmEngine);
+            // Add strategy table based on spec
+            switch (specTab)
+            {
+                case SHAMAN_TAB_ELEMENTAL:
+                    fsmEngine->AddStrategy(&ShamanElementalStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Elemental Shaman FSM for bot {}", bot->GetName());
+                    break;
+                case SHAMAN_TAB_ENHANCEMENT:
+                    fsmEngine->AddStrategy(&ShamanEnhanceStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Enhancement Shaman FSM for bot {}", bot->GetName());
+                    break;
+                case SHAMAN_TAB_RESTORATION:
+                    fsmEngine->AddStrategy(&ShamanRestoStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Restoration Shaman FSM for bot {}", bot->GetName());
+                    break;
+                default:
+                    // Default to Enhancement if no talents
+                    fsmEngine->AddStrategy(&ShamanEnhanceStrategy::table);
+                    LOG_DEBUG("playerbots", "FSM: Initialized Shaman FSM (default Enhancement) for bot {}", bot->GetName());
+                    break;
+            }
+            break;
+        // All classes implemented!
         default:
             LOG_DEBUG("playerbots", "FSM: Class {} not yet supported for FSM, disabling", botClass);
             useFSM = false;
@@ -1504,7 +1756,8 @@ void PlayerbotAI::DoNextAction(bool min)
     // Change engine if just ressed
     if (currentEngine == engines[BOT_STATE_DEAD] && isBotAlive)
     {
-        bot->SendMovementFlagUpdate();
+        if (!bot->IsRooted())
+            bot->SendMovementFlagUpdate();
 
         ChangeEngine(BOT_STATE_NON_COMBAT);
         return;

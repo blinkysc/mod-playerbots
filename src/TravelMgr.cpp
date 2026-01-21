@@ -1671,10 +1671,9 @@ TravelState TravelTarget::getTravelState()
 
 void TravelMgr::Clear()
 {
-    std::shared_lock<std::shared_mutex> lock(*HashMapHolder<Player>::GetLock());
-    HashMapHolder<Player>::MapType const& m = ObjectAccessor::GetPlayers();
-    for (HashMapHolder<Player>::MapType::const_iterator itr = m.begin(); itr != m.end(); ++itr)
-        TravelMgr::setNullTravelTarget(itr->second);
+    ObjectAccessor::ForEachPlayer([this](Player* player) {
+        setNullTravelTarget(player);
+    });
 
     for (auto& quest : quests)
     {
