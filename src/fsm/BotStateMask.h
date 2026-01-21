@@ -390,4 +390,19 @@ namespace HealthLevel
     constexpr uint8_t Full         = 7;  // >= 85%
 }
 
+// ============================================================================
+// MANA LEVEL CONSTANTS
+// ============================================================================
+namespace ManaLevel
+{
+    constexpr uint8_t Critical     = 0;  // < 10%
+    constexpr uint8_t VeryLow      = 1;  // < 20%
+    constexpr uint8_t Low          = 2;  // < 30%
+    constexpr uint8_t MedLow       = 3;  // < 40%
+    constexpr uint8_t Medium       = 4;  // < 55%
+    constexpr uint8_t MedHigh      = 5;  // < 70%
+    constexpr uint8_t High         = 6;  // < 85%
+    constexpr uint8_t Full         = 7;  // >= 85%
+}
+
 #endif // _PLAYERBOT_BOTSTATEMASK_H

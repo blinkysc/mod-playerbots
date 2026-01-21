@@ -326,6 +326,12 @@ public:
         return *this;
     }
 
+    ConditionBuilder& maxMana(uint8_t level)
+    {
+        cond.maxManaLevel = level;
+        return *this;
+    }
+
     ConditionBuilder& minAttackers(uint8_t count)
     {
         cond.minAttackers = count;
