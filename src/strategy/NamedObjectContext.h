@@ -65,9 +65,10 @@ public:
         ObjectCreator& creator = creators[name];
 
         T* object = creator(botAI);
-        Qualified* q = dynamic_cast<Qualified*>(object);
-        if (q && found != std::string::npos)
-            q->Qualify(qualifier);
+        // Only do dynamic_cast when there's actually a qualifier to apply
+        if (found != std::string::npos)
+            if (Qualified* q = dynamic_cast<Qualified*>(object))
+                q->Qualify(qualifier);
 
         return object;
     }
@@ -188,28 +189,32 @@ public:
             name = name.substr(0, found);
         }
 
-        if (creators.find(name) == creators.end())
+        // Use iterator to avoid double-lookup (was find + at)
+        auto it = creators.find(name);
+        if (it == creators.end())
             return nullptr;
 
-        const ObjectCreator& creator = creators.at(name);
-
-        T* object = creator(botAI);
-        Qualified* q = dynamic_cast<Qualified*>(object);
-        if (q && found != std::string::npos)
-            q->Qualify(qualifier);
+        T* object = it->second(botAI);
+        // Only do dynamic_cast when there's actually a qualifier to apply
+        if (found != std::string::npos)
+            if (Qualified* q = dynamic_cast<Qualified*>(object))
+                q->Qualify(qualifier);
 
         return object;
     }
 
     T* GetContextObject(const std::string& name, PlayerbotAI* botAI)
     {
-        if (created.find(name) == created.end())
-        {
-            if (T* object = create(name, botAI))
-                return created[name] = object;
-        }
+        // Use iterator to avoid double-lookup (was 2-3 lookups, now 1-2)
+        auto it = created.find(name);
+        if (it != created.end())
+            return it->second;
 
-        return created[name];
+        T* object = create(name, botAI);
+        if (object)
+            created.emplace(name, object);
+
+        return object;
     }
 
     std::set<std::string> GetSiblings(const std::string& name)
@@ -284,9 +289,10 @@ public:
         const ObjectCreator& creator = creators[name];
 
         T* object = creator(botAI);
-        Qualified* q = dynamic_cast<Qualified*>(object);
-        if (q && found != std::string::npos)
-            q->Qualify(qualifier);
+        // Only do dynamic_cast when there's actually a qualifier to apply
+        if (found != std::string::npos)
+            if (Qualified* q = dynamic_cast<Qualified*>(object))
+                q->Qualify(qualifier);
 
         return object;
     }

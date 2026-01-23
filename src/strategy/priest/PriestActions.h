@@ -121,7 +121,7 @@ HEAL_ACTION(CastDesperatePrayerAction, "desperate prayer");
 BUFF_ACTION(CastFearWardAction, "fear ward");
 BUFF_PARTY_ACTION(CastFearWardOnPartyAction, "fear ward");
 SPELL_ACTION_U(CastStarshardsAction, "starshards",
-               (AI_VALUE2(uint8, "mana", "self target") > 50 && AI_VALUE(Unit*, "current target") &&
+               (AI_VALUE2(uint8, "mana", "self target") > 50 && GET_CURRENT_TARGET() &&
                 AI_VALUE2(float, "distance", "current target") > 15.0f));
 BUFF_ACTION(CastElunesGraceAction, "elune's grace");
 BUFF_ACTION(CastFeedbackAction, "feedback");

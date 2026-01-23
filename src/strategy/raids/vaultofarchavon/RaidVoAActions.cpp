@@ -19,7 +19,7 @@ bool EmalonMarkBossAction::Execute(Event event)
     }
 
     bool isMainTank = botAI->IsMainTank(bot);
-    Unit* mainTankUnit = AI_VALUE(Unit*, "main tank");
+    Unit* mainTankUnit = GET_MAIN_TANK();
     Player* mainTank = mainTankUnit ? mainTankUnit->ToPlayer() : nullptr;
 
     if (mainTank && !GET_PLAYERBOT_AI(mainTank))  // Main tank is a real player
@@ -100,7 +100,7 @@ bool EmalonOverchargeAction::Execute(Event event)
 {
     // Check if there is any overcharged minion
     Unit* minion = nullptr;
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -120,7 +120,7 @@ bool EmalonOverchargeAction::Execute(Event event)
     }
 
     bool isMainTank = botAI->IsMainTank(bot);
-    Unit* mainTankUnit = AI_VALUE(Unit*, "main tank");
+    Unit* mainTankUnit = GET_MAIN_TANK();
     Player* mainTank = mainTankUnit ? mainTankUnit->ToPlayer() : nullptr;
 
     if (mainTank && !GET_PLAYERBOT_AI(mainTank))  // Main tank is a real player

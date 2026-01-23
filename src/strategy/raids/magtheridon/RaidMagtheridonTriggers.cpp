@@ -65,7 +65,7 @@ bool MagtheridonBurningAbyssalSpawnedTrigger::IsActive()
     if (!magtheridon || bot->getClass() != CLASS_WARLOCK)
         return false;
 
-    const GuidVector& npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    const GuidVector& npcs = GET_NEAREST_HOSTILE_NPCS();
         return std::any_of(npcs.begin(), npcs.end(), [this](const ObjectGuid& npc)
         {
             Unit* unit = botAI->GetUnit(npc);

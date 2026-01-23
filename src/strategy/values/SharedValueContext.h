@@ -58,6 +58,7 @@ public:
 
         UntypedValue* value = valueContexts.GetContextObject(name, botAI);
         delete botAI;
+        // dynamic_cast required: UntypedValue and Value<T> are sibling bases
         return dynamic_cast<Value<T>*>(value);
     }
 

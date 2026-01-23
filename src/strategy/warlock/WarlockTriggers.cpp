@@ -255,7 +255,7 @@ bool RainOfFireChannelCheckTrigger::IsActive()
         // Only trigger if the spell being channeled is Rain of Fire
         if (RAIN_OF_FIRE_SPELL_IDS.count(spell->m_spellInfo->Id))
         {
-            uint8 attackerCount = AI_VALUE(uint8, "attacker count");
+            uint8 attackerCount = GET_ATTACKER_COUNT();
             return attackerCount < minEnemies;
         }
     }

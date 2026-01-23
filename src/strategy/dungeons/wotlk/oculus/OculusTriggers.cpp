@@ -11,7 +11,7 @@ bool DrakosUnstableSphereTrigger::IsActive()
     // if (botAI->IsMelee(bot)) { return false; }
     if (botAI->IsTank(bot)) { return false; }
 
-    GuidVector targets = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector targets = GET_NEAREST_HOSTILE_NPCS();
     for (auto& target : targets)
     {
         Unit* unit = botAI->GetUnit(target);
@@ -49,7 +49,7 @@ bool GroupFlyingTrigger::IsActive()
 
 bool DrakeCombatTrigger::IsActive()
 {
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     return !targets.empty();
 }
 

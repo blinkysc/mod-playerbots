@@ -29,7 +29,7 @@ float AttackFragmentMultiplier::GetValue(Action* action)
 
     Unit* fragment = nullptr;
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+    GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 
     for (auto& target : targets)
     {

@@ -15,7 +15,7 @@ bool MalygosPositionAction::Execute(Event event)
     {
         Unit* spark = nullptr;
 
-        GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+        GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
         for (auto& target : targets)
         {
             Unit* unit = botAI->GetUnit(target);
@@ -80,7 +80,7 @@ bool MalygosTargetAction::Execute(Event event)
         Unit* newTarget = boss;
         // Unit* spark = nullptr;
 
-        // GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+        // GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
         // for (auto& target : targets)
         // {
         //     Unit* unit = botAI->GetUnit(target);
@@ -96,7 +96,7 @@ bool MalygosTargetAction::Execute(Event event)
         //     newTarget = spark;
         // }
 
-        Unit* currentTarget = AI_VALUE(Unit*, "current target");
+        Unit* currentTarget = GET_CURRENT_TARGET();
 
         if (!currentTarget || currentTarget->GetEntry() != newTarget->GetEntry())
         {
@@ -111,7 +111,7 @@ bool MalygosTargetAction::Execute(Event event)
         Unit* nexusLord = nullptr;
         Unit* scionOfEternity = nullptr;
 
-        GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+        GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
         for (auto& target : targets)
         {
             Unit* unit = botAI->GetUnit(target);
@@ -138,7 +138,7 @@ bool MalygosTargetAction::Execute(Event event)
 
         if (!newTarget) { return false; }
 
-        Unit* currentTarget = AI_VALUE(Unit*, "current target");
+        Unit* currentTarget = GET_CURRENT_TARGET();
         if (!currentTarget || currentTarget->GetEntry() != newTarget->GetEntry())
         {
             return Attack(newTarget);
@@ -155,7 +155,7 @@ bool MalygosTargetAction::Execute(Event event)
 // {
 //     Unit* spark = nullptr;
 
-//     GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+//     GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 //     for (auto& target : targets)
 //     {
 //         Unit* unit = botAI->GetUnit(target);
@@ -181,7 +181,7 @@ bool MalygosTargetAction::Execute(Event event)
 // {
 //     Unit* spark = nullptr;
 
-//     GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+//     GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 //     for (auto& target : targets)
 //     {
 //         Unit* unit = botAI->GetUnit(target);
@@ -199,7 +199,7 @@ bool MalygosTargetAction::Execute(Event event)
 // {
 //     Unit* spark = nullptr;
 
-//     GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+//     GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 //     for (auto& target : targets)
 //     {
 //         Unit* unit = botAI->GetUnit(target);
@@ -287,13 +287,13 @@ bool EoEDrakeAttackAction::Execute(Event event)
         return false;
     }
 
-    // Unit* target = AI_VALUE(Unit*, "current target");
+    // Unit* target = GET_CURRENT_TARGET();
     Unit* boss = AI_VALUE2(Unit*, "find target", "malygos");
     // if (!boss) { return false; }
 
     if (!boss)
     {
-        GuidVector npcs = AI_VALUE(GuidVector, "possible targets");
+        GuidVector npcs = GET_POSSIBLE_TARGETS();
         for (auto& npc : npcs)
         {
             Unit* unit = botAI->GetUnit(npc);

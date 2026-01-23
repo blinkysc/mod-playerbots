@@ -12,7 +12,7 @@ bool AvoidUnstableSphereAction::Execute(Event event)
     float extraDistance = 1.0f;
     Unit* closestSphere = nullptr;
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -62,7 +62,7 @@ bool MountDrakeAction::Execute(Event event)
             break;
     }
 
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     for (auto& member : members)
     {
         Player* player = botAI->GetPlayer(member);
@@ -157,11 +157,11 @@ bool OccDrakeAttackAction::Execute(Event event)
     vehicleBase = bot->GetVehicleBase();
     if (!vehicleBase) { return false; }
 
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
 
     if (!target)
     {
-        GuidVector npcs = AI_VALUE(GuidVector, "possible targets");
+        GuidVector npcs = GET_POSSIBLE_TARGETS();
         for (auto& npc : npcs)
         {
             Unit* unit = botAI->GetUnit(npc);
@@ -241,7 +241,7 @@ bool OccDrakeAttackAction::EmeraldDrakeAction(Unit* target)
     }
 
     Unit* healingTarget = nullptr;
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     for (auto& member : members)
     {
         Unit* unit = botAI->GetUnit(member);
@@ -336,7 +336,7 @@ bool TimeBombSpreadAction::Execute(Event event)
     float radius = 10.0f;
     float distanceExtra = 2.0f;
 
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     for (auto& member : members)
     {
         if (bot->GetGUID() == member)

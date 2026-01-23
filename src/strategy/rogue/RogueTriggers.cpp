@@ -19,12 +19,12 @@ bool UnstealthTrigger::IsActive()
     if (!botAI->HasAura("stealth", bot))
         return false;
 
-    return botAI->HasAura("stealth", bot) && !AI_VALUE(uint8, "attacker count") &&
+    return botAI->HasAura("stealth", bot) && !GET_ATTACKER_COUNT() &&
            (AI_VALUE2(bool, "moving", "self target") &&
             ((botAI->GetMaster() &&
               sServerFacade->IsDistanceGreaterThan(AI_VALUE2(float, "distance", "group leader"), 10.0f) &&
               AI_VALUE2(bool, "moving", "group leader")) ||
-             !AI_VALUE(uint8, "attacker count")));
+             !GET_ATTACKER_COUNT()));
 }
 
 bool StealthTrigger::IsActive()
@@ -34,7 +34,7 @@ bool StealthTrigger::IsActive()
 
     float distance = 30.f;
 
-    Unit* target = AI_VALUE(Unit*, "enemy player target");
+    Unit* target = GET_ENEMY_PLAYER_TARGET();
     if (target && !target->IsInWorld())
     {
         return false;
@@ -79,17 +79,17 @@ bool SprintTrigger::IsActive()
     bool targeted = false;
 
     Unit* dps = AI_VALUE(Unit*, "dps target");
-    Unit* enemyPlayer = AI_VALUE(Unit*, "enemy player target");
+    Unit* enemyPlayer = GET_ENEMY_PLAYER_TARGET();
 
     if (enemyPlayer && !enemyPlayer->IsInWorld())
     {
         return false;
     }
     if (dps)
-        targeted = (dps == AI_VALUE(Unit*, "current target"));
+        targeted = (dps == GET_CURRENT_TARGET());
 
     if (enemyPlayer && !targeted)
-        targeted = (enemyPlayer == AI_VALUE(Unit*, "current target"));
+        targeted = (enemyPlayer == GET_CURRENT_TARGET());
 
     if (!targeted)
         return false;
@@ -105,7 +105,7 @@ bool SprintTrigger::IsActive()
 
 bool ExposeArmorTrigger::IsActive()
 {
-    Unit* target = AI_VALUE(Unit*, "current target"); // Get the bot's current target
+    Unit* target = GET_CURRENT_TARGET(); // Get the bot's current target
     return DebuffTrigger::IsActive() && !botAI->HasAura("sunder armor", target, false, false, -1, true) &&
            AI_VALUE2(uint8, "combo", "current target") <= 3;
 }

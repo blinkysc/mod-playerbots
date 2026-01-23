@@ -20,7 +20,7 @@ bool SwitchToMeleeAction::isUseful()
 {
     if (bot->getClass() == CLASS_HUNTER)
     {
-        Unit* target = AI_VALUE(Unit*, "current target");
+        Unit* target = GET_CURRENT_TARGET();
         time_t lastFlee = AI_VALUE(LastMovement&, "last movement").lastFlee;
         return botAI->HasStrategy("ranged", BOT_STATE_COMBAT) &&
                ((bot->IsInCombat() && target &&
@@ -42,7 +42,7 @@ bool SwitchToRangedAction::isUseful()
 {
     if (bot->getClass() == CLASS_HUNTER)
     {
-        Unit* target = AI_VALUE(Unit*, "current target");
+        Unit* target = GET_CURRENT_TARGET();
         bool hasAmmo = AI_VALUE2(uint32, "item count", "ammo");
         return botAI->HasStrategy("close", BOT_STATE_COMBAT) && hasAmmo &&
                ((bot->IsInCombat() && target &&

@@ -67,7 +67,7 @@ uint32 GroupBoolCountValue::Calculate()
 {
     uint32 count = 0;
 
-    for (ObjectGuid guid : AI_VALUE(GuidVector, "group members"))
+    for (ObjectGuid guid : GET_GROUP_MEMBERS())
     {
         Player* player = ObjectAccessor::FindPlayer(guid);
 
@@ -89,7 +89,7 @@ uint32 GroupBoolCountValue::Calculate()
 
 bool GroupBoolANDValue::Calculate()
 {
-    for (ObjectGuid guid : AI_VALUE(GuidVector, "group members"))
+    for (ObjectGuid guid : GET_GROUP_MEMBERS())
     {
         Player* player = ObjectAccessor::FindPlayer(guid);
 
@@ -111,7 +111,7 @@ bool GroupBoolANDValue::Calculate()
 
 bool GroupBoolORValue::Calculate()
 {
-    for (ObjectGuid guid : AI_VALUE(GuidVector, "group members"))
+    for (ObjectGuid guid : GET_GROUP_MEMBERS())
     {
         Player* player = ObjectAccessor::FindPlayer(guid);
 
@@ -135,7 +135,7 @@ bool GroupReadyValue::Calculate()
 {
     bool inDungeon = !WorldPosition(bot).isOverworld();
 
-    for (ObjectGuid guid : AI_VALUE(GuidVector, "group members"))
+    for (ObjectGuid guid : GET_GROUP_MEMBERS())
     {
         Player* member = ObjectAccessor::FindPlayer(guid);
 

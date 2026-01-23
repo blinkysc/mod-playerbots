@@ -18,7 +18,7 @@ bool CastTotemAction::isUseful()
 }
 
 bool CastMagmaTotemAction::isUseful() {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target || !bot->IsWithinMeleeRange(target))
         return false;
 
@@ -26,7 +26,7 @@ bool CastMagmaTotemAction::isUseful() {
 }
 
 bool CastFireNovaAction::isUseful() {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
 

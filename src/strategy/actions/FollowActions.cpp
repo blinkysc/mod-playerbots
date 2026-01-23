@@ -156,7 +156,7 @@ bool FleeToGroupLeaderAction::isUseful()
     if (botAI->GetGroupLeader() == bot)
         return false;
 
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (target && botAI->GetGroupLeader()->GetTarget() == target->GetGUID())
         return false;
 

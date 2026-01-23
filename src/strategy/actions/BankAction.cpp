@@ -13,7 +13,7 @@ bool BankAction::Execute(Event event)
 {
     std::string const text = event.getParam();
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest npcs");
+    GuidVector npcs = GET_NEAREST_NPCS();
     for (GuidVector::iterator i = npcs.begin(); i != npcs.end(); i++)
     {
         Unit* npc = botAI->GetUnit(*i);

@@ -5,7 +5,7 @@
 bool AttackNadoxGuardianAction::Execute(Event event)
 {
     Unit* target = AI_VALUE2(Unit*, "find target", "ahn'kahar guardian");
-    if (!target || AI_VALUE(Unit*, "current target") == target)
+    if (!target || GET_CURRENT_TARGET() == target)
     {
         return false;
     }
@@ -17,7 +17,7 @@ bool AttackJedogaVolunteerAction::Execute(Event event)
     Unit* target = nullptr;
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+    GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -33,7 +33,7 @@ bool AttackJedogaVolunteerAction::Execute(Event event)
         }
     }
 
-    if (!target || AI_VALUE(Unit*, "current target") == target)
+    if (!target || GET_CURRENT_TARGET() == target)
     {
         return false;
     }
@@ -69,7 +69,7 @@ bool AvoidShadowCrashAction::Execute(Event event)
     // Otherwise ranged members passively spread, to avoid AoE overlap
     if (botAI->IsMelee(bot)) { return false; }
 
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     for (auto& member : members)
     {
         Unit* unit = botAI->GetUnit(member);

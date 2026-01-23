@@ -25,7 +25,7 @@ float BjarngrimMultiplier::GetValue(Action* action)
     // and some dps just stand at range and don't engage the boss at all as they can't find the adds
     // Unit* boss_add = AI_VALUE2(Unit*, "find target", "stormforged lieutenant");
     Unit* boss_add = nullptr;
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+    GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {

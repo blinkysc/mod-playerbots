@@ -16,7 +16,7 @@ bool SartharionTankPositionAction::Execute(Event event)
     Unit* vesperon = nullptr;
 
     // Detect incoming drakes before they are on aggro table
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+    GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
     for (auto& target : targets)
     {
         Unit* unit = botAI->GetUnit(target);
@@ -56,17 +56,17 @@ bool SartharionTankPositionAction::Execute(Event event)
         float triggerDistance = 100.0f;
         // Prioritise threat before positioning
         if (tenebron && bot->GetExactDist2d(tenebron) < triggerDistance &&
-            tenebron->GetTarget() != bot->GetGUID() && AI_VALUE(Unit*, "current target") != tenebron)
+            tenebron->GetTarget() != bot->GetGUID() && GET_CURRENT_TARGET() != tenebron)
         {
             return Attack(tenebron);
         }
         if (shadron && bot->GetExactDist2d(shadron) < triggerDistance &&
-            shadron->GetTarget() != bot->GetGUID() && AI_VALUE(Unit*, "current target") != shadron)
+            shadron->GetTarget() != bot->GetGUID() && GET_CURRENT_TARGET() != shadron)
         {
             return Attack(shadron);
         }
         if (vesperon && bot->GetExactDist2d(vesperon) < triggerDistance &&
-            vesperon->GetTarget() != bot->GetGUID() && AI_VALUE(Unit*, "current target") != vesperon)
+            vesperon->GetTarget() != bot->GetGUID() && GET_CURRENT_TARGET() != vesperon)
         {
             return Attack(vesperon);
         }
@@ -88,7 +88,7 @@ bool AvoidTwilightFissureAction::Execute(Event event)
 {
     const float radius = 5.0f;
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -109,7 +109,7 @@ bool AvoidFlameTsunamiAction::Execute(Event event)
     // Adjustable, this is the acceptable distance to stack point that will be accepted as "safe"
     float looseDistance = 4.0f;
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -198,7 +198,7 @@ bool SartharionAttackPriorityAction::Execute(Event event)
         target = sartharion;
     }
 
-    if (target && AI_VALUE(Unit*, "current target") != target)
+    if (target && GET_CURRENT_TARGET() != target)
     {
         return Attack(target);
     }

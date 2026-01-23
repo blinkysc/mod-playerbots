@@ -423,6 +423,23 @@ public:
         if (!player)
             return;
 
+        // Fast-path: Only process packets that bots actually handle
+        // This avoids millions of wasted iterations with 5000+ bots
+        switch (packet->GetOpcode())
+        {
+            case SMSG_SPELL_FAILURE:
+            case SMSG_SPELL_DELAYED:
+            case SMSG_EMOTE:
+            case SMSG_MESSAGECHAT:
+            case SMSG_GM_MESSAGECHAT:
+            case SMSG_FORCE_MOVE_ROOT:
+            case SMSG_FORCE_MOVE_UNROOT:
+            case SMSG_MOVE_KNOCK_BACK:
+                break;
+            default:
+                return;
+        }
+
         if (PlayerbotAI* botAI = GET_PLAYERBOT_AI(player))
         {
             botAI->HandleBotOutgoingPacket(*packet);

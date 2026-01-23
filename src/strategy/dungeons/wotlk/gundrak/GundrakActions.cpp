@@ -27,14 +27,14 @@ bool AttackSnakeWrapAction::Execute(Event event)
     Unit* snakeWrap = nullptr;
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+    GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 
     for (auto& target : targets)
     {
         Unit* unit = botAI->GetUnit(target);
         if (unit && unit->GetEntry() == NPC_SNAKE_WRAP)
         {
-            Unit* currentTarget = AI_VALUE(Unit*, "current target");
+            Unit* currentTarget = GET_CURRENT_TARGET();
             if (!currentTarget || currentTarget->GetEntry() != NPC_SNAKE_WRAP)
             {
             return Attack(unit);

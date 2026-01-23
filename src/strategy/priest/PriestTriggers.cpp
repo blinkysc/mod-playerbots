@@ -93,7 +93,7 @@ bool MindSearChannelCheckTrigger::IsActive()
         // Only trigger if the spell being channeled is Mind Sear
         if (MIND_SEAR_SPELL_IDS.count(spell->m_spellInfo->Id))
         {
-            uint8 attackerCount = AI_VALUE(uint8, "attacker count");
+            uint8 attackerCount = GET_ATTACKER_COUNT();
             return attackerCount < minEnemies;
         }
     }

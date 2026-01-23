@@ -51,7 +51,7 @@ bool UseManaAgateAction::isUseful()
 
 bool CastFrostNovaAction::isUseful()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target || !target->IsInWorld())
         return false;
 
@@ -73,7 +73,7 @@ bool CastConeOfColdAction::isUseful()
 
 bool CastDragonsBreathAction::isUseful()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
     bool facingTarget = AI_VALUE2(bool, "facing", "current target");
@@ -83,7 +83,7 @@ bool CastDragonsBreathAction::isUseful()
 
 bool CastBlastWaveAction::isUseful()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
     bool targetClose = bot->IsWithinCombatRange(target, 10.0f);
@@ -135,7 +135,7 @@ Unit* CastFocusMagicOnPartyAction::GetTarget()
 
 bool CastBlinkBackAction::Execute(Event event)
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
     // can cast spell check passed in isUseful()

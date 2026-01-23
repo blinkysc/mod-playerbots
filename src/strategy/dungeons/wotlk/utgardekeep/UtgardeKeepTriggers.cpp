@@ -5,7 +5,7 @@
 
 bool KelesethFrostTombTrigger::IsActive()
 {
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     for (auto& member : members)
     {
         Unit* unit = botAI->GetUnit(member);

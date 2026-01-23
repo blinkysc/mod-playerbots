@@ -47,7 +47,7 @@ bool QuestAction::Execute(Event event)
     bool result = false;
 
     // Check the nearest NPCs
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest npcs");
+    GuidVector npcs = GET_NEAREST_NPCS();
     for (auto const& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);

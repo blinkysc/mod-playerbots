@@ -96,13 +96,13 @@ bool RaidOnyxiaMoveToSafeZoneAction::Execute(Event event)
 
 bool RaidOnyxiaKillWhelpsAction::Execute(Event event)
 {
-    Unit* currentTarget = AI_VALUE(Unit*, "current target");
+    Unit* currentTarget = GET_CURRENT_TARGET();
     // If already attacking a whelp, don't swap targets
     if (currentTarget && currentTarget->GetEntry() == 11262)
     {
         return false;
     }
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     for (ObjectGuid guid : targets)
     {
         Creature* unit = botAI->GetCreature(guid);

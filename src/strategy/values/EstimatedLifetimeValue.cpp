@@ -15,7 +15,7 @@ float EstimatedLifetimeValue::Calculate()
         return 0.0f;
     }
     float dps = AI_VALUE(float, "estimated group dps");
-    bool aoePenalty = AI_VALUE(uint8, "attacker count") >= 3;
+    bool aoePenalty = GET_ATTACKER_COUNT() >= 3;
     if (aoePenalty)
         dps *= 0.75;
     float res = target->GetHealth() / dps;

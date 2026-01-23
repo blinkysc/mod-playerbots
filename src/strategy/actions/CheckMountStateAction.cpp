@@ -115,13 +115,13 @@ bool CheckMountStateAction::isUseful()
 bool CheckMountStateAction::Execute(Event /*event*/)
 {
     // Determine if there are no attackers
-    bool noAttackers = !AI_VALUE2(bool, "combat", "self target") || !AI_VALUE(uint8, "attacker count");
-    bool enemy = AI_VALUE(Unit*, "enemy player target");
+    bool noAttackers = !AI_VALUE2(bool, "combat", "self target") || !GET_ATTACKER_COUNT();
+    bool enemy = GET_ENEMY_PLAYER_TARGET();
     bool dps = AI_VALUE(Unit*, "dps target");
     bool shouldDismount = false;
     bool shouldMount = false;
 
-    Unit* currentTarget = AI_VALUE(Unit*, "current target");
+    Unit* currentTarget = GET_CURRENT_TARGET();
     if (currentTarget)
     {
         float dismountDistance = CalculateDismountDistance();

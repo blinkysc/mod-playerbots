@@ -9,7 +9,7 @@ bool StormforgedLieutenantTrigger::IsActive()
 
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
 
     for (auto& target : targets)
     {
@@ -39,7 +39,7 @@ bool VolkhanTrigger::IsActive()
 
 bool IonarStaticOverloadTrigger::IsActive()
 {
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     for (auto& member : members)
     {
         Unit* unit = botAI->GetUnit(member);

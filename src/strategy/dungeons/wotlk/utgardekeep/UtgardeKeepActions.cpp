@@ -9,7 +9,7 @@ bool AttackFrostTombAction::Execute(Event event)
 
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+    GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 
     for (auto& target : targets)
     {
@@ -20,7 +20,7 @@ bool AttackFrostTombAction::Execute(Event event)
             break;
         }
     }
-    if (!frostTomb || AI_VALUE(Unit*, "current target") == frostTomb)
+    if (!frostTomb || GET_CURRENT_TARGET() == frostTomb)
     {
         return false;
     }
@@ -33,7 +33,7 @@ bool AttackDalronnAction::Execute(Event event)
     Unit* boss = AI_VALUE2(Unit*, "find target", "dalronn the controller");
     if (!boss) { return false; }
 
-    if (AI_VALUE(Unit*, "current target") == boss)
+    if (GET_CURRENT_TARGET() == boss)
     {
         return false;
     }

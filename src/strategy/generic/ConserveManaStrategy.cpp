@@ -24,7 +24,7 @@
 //     if (health < sPlayerbotAIConfig->lowHealth)
 //         return 1.0f;
 
-//     Unit* target = AI_VALUE(Unit*, "current target");
+//     Unit* target = GET_CURRENT_TARGET();
 //     if (action->GetTarget() != target)
 //         return 1.0f;
 
@@ -52,7 +52,7 @@
 //     if (!action)
 //         return 1.0f;
 
-//     if (action->GetTarget() != AI_VALUE(Unit*, "current target"))
+//     if (action->GetTarget() != GET_CURRENT_TARGET())
 //         return 1.0f;
 
 //     double saveLevel = AI_VALUE(double, "mana save level");

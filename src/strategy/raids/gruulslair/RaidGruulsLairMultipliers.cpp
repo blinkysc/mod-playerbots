@@ -55,7 +55,7 @@ float HighKingMaulgarAvoidWhirlwindMultiplier::GetValue(Action* action)
 float HighKingMaulgarDisableArcaneShotOnKroshMultiplier::GetValue(Action* action)
 {
     Unit* krosh = AI_VALUE2(Unit*, "find target", "krosh firehand");
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
 
     if (krosh && target && target->GetGUID() == krosh->GetGUID() && dynamic_cast<CastArcaneShotAction*>(action))
         return 0.0f;

@@ -14,7 +14,7 @@
 #include "BattlegroundAV.h"
 #include "BattlegroundEY.h"
 
-bool EnemyPlayerNear::IsActive() { return AI_VALUE(Unit*, "enemy player target"); }
+bool EnemyPlayerNear::IsActive() { return GET_ENEMY_PLAYER_TARGET(); }
 
 bool PlayerHasNoFlag::IsActive()
 {
@@ -251,7 +251,7 @@ bool EnemyFlagCarrierNear::IsActive()
         return false;
 
     // Check if there is another enemy player target closer than the FC
-    Unit* nearbyEnemy = AI_VALUE(Unit*, "enemy player target");
+    Unit* nearbyEnemy = GET_ENEMY_PLAYER_TARGET();
 
     if (nearbyEnemy)
     {

@@ -9,6 +9,6 @@
 
 bool NearestAddsValue::AcceptUnit(Unit* unit)
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     return unit != target;
 }

@@ -511,7 +511,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
 
     //             if (!bot->m_taxi.IsTaximaskNodeKnown(tEntry->from))
     //             {
-    //                 GuidVector npcs = AI_VALUE(GuidVector, "nearest npcs");
+    //                 GuidVector npcs = GET_NEAREST_NPCS();
     //                 for (GuidVector::iterator i = npcs.begin(); i != npcs.end(); i++)
     //                 {
     //                     Creature* unit = bot->GetNPCIfCanInteractWith(*i, UNIT_NPC_FLAG_FLIGHTMASTER);
@@ -1846,7 +1846,7 @@ void MovementAction::DoMovePoint(Unit* unit, float x, float y, float z, bool gen
 
 bool FleeAction::Execute(Event event)
 {
-    return MoveAway(AI_VALUE(Unit*, "current target"), sPlayerbotAIConfig->fleeDistance, true);
+    return MoveAway(GET_CURRENT_TARGET(), sPlayerbotAIConfig->fleeDistance, true);
 }
 
 bool FleeAction::isUseful()
@@ -1855,7 +1855,7 @@ bool FleeAction::isUseful()
     {
         return false;
     }
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (target && target->IsInWorld() && !bot->IsWithinMeleeRange(target))
         return false;
 
@@ -1869,7 +1869,7 @@ bool FleeWithPetAction::Execute(Event event)
         botAI->PetFollow();
     }
 
-    return Flee(AI_VALUE(Unit*, "current target"));
+    return Flee(GET_CURRENT_TARGET());
 }
 
 bool AvoidAoeAction::isUseful()
@@ -2099,7 +2099,7 @@ bool AvoidAoeAction::AvoidUnitWithDamageAura()
 
 Position MovementAction::BestPositionForMeleeToFlee(Position pos, float radius)
 {
-    Unit* currentTarget = AI_VALUE(Unit*, "current target");
+    Unit* currentTarget = GET_CURRENT_TARGET();
     std::vector<CheckAngle> possibleAngles;
     if (currentTarget)
     {
@@ -2166,7 +2166,7 @@ Position MovementAction::BestPositionForMeleeToFlee(Position pos, float radius)
 
 Position MovementAction::BestPositionForRangedToFlee(Position pos, float radius)
 {
-    Unit* currentTarget = AI_VALUE(Unit*, "current target");
+    Unit* currentTarget = GET_CURRENT_TARGET();
     std::vector<CheckAngle> possibleAngles;
     float angleToTarget = 0.0f;
     float angleFleeFromCenter = bot->GetAngle(&pos) - (float)M_PI;
@@ -2319,7 +2319,7 @@ bool CombatFormationMoveAction::isUseful()
 
 bool CombatFormationMoveAction::Execute(Event event)
 {
-    float dis = AI_VALUE(float, "disperse distance");
+    float dis = GET_DISPERSE_DISTANCE();
     if (dis <= 0.0f || (!bot->IsInCombat() && botAI->HasStrategy("stay", BotState::BOT_STATE_NON_COMBAT)) ||
         (bot->IsInCombat() && botAI->HasStrategy("stay", BotState::BOT_STATE_COMBAT)))
         return false;
@@ -2450,7 +2450,7 @@ Player* CombatFormationMoveAction::NearestGroupMember(float dis)
 
 bool TankFaceAction::Execute(Event event)
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
 
@@ -2519,7 +2519,7 @@ bool TankFaceAction::Execute(Event event)
 
 bool RearFlankAction::isUseful()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
 
@@ -2534,7 +2534,7 @@ bool RearFlankAction::isUseful()
 
 bool RearFlankAction::Execute(Event event)
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
 
@@ -2578,7 +2578,7 @@ bool DisperseSetAction::Execute(Event event)
         {
             SET_AI_VALUE(float, "disperse distance", DEFAULT_DISPERSE_DISTANCE_RANGED);
         }
-        float dis = AI_VALUE(float, "disperse distance");
+        float dis = GET_DISPERSE_DISTANCE();
         std::ostringstream out;
         out << "Enable disperse distance " << std::setprecision(2) << dis;
         botAI->TellMasterNoFacing(out.str());
@@ -2586,7 +2586,7 @@ bool DisperseSetAction::Execute(Event event)
     }
     if (text == "increase")
     {
-        float dis = AI_VALUE(float, "disperse distance");
+        float dis = GET_DISPERSE_DISTANCE();
         std::ostringstream out;
         if (dis <= 0.0f)
         {
@@ -2602,7 +2602,7 @@ bool DisperseSetAction::Execute(Event event)
     }
     if (text == "decrease")
     {
-        float dis = AI_VALUE(float, "disperse distance");
+        float dis = GET_DISPERSE_DISTANCE();
         dis -= 1.0f;
         if (dis <= 0.0f)
         {
@@ -2634,7 +2634,7 @@ bool DisperseSetAction::Execute(Event event)
     }
     std::ostringstream out;
     out << "Usage: disperse [enable | disable | increase | decrease | set {distance}]";
-    float dis = AI_VALUE(float, "disperse distance");
+    float dis = GET_DISPERSE_DISTANCE();
     if (dis > 0.0f)
     {
         out << "(Current disperse distance: " << std::setprecision(2) << dis << ")";
@@ -2656,7 +2656,7 @@ bool MoveToLootAction::Execute(Event event)
 
 bool MoveOutOfEnemyContactAction::Execute(Event event)
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
 
@@ -2667,7 +2667,7 @@ bool MoveOutOfEnemyContactAction::isUseful() { return AI_VALUE2(bool, "inside ta
 
 bool SetFacingTargetAction::Execute(Event event)
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
 
@@ -2693,7 +2693,7 @@ bool SetFacingTargetAction::isPossible()
 
 bool SetBehindTargetAction::Execute(Event event)
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
 
@@ -2825,7 +2825,7 @@ bool MoveFromGroupAction::Execute(Event event)
 
 bool MoveAwayFromCreatureAction::Execute(Event event)
 {
-    GuidVector targets = AI_VALUE(GuidVector, "nearest npcs");
+    GuidVector targets = GET_NEAREST_NPCS();
     Creature* nearestCreature = bot->FindNearestCreature(creatureId, range, alive);
 
     // Find all creatures with the specified Id

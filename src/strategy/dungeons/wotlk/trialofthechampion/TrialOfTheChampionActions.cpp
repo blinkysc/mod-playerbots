@@ -112,7 +112,7 @@ bool ToCMountedAction::Execute(Event event)
     if (!vehicleBase || !vehicle)
         return false;
 
-    GuidVector attackers = AI_VALUE(GuidVector, "possible targets no los");
+    GuidVector attackers = GET_POSSIBLE_TARGETS_NO_LOS();
 
     Unit* target = nullptr;
     for (auto i = attackers.begin(); i != attackers.end(); ++i)

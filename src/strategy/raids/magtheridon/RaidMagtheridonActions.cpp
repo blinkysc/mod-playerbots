@@ -312,7 +312,7 @@ bool MagtheridonWarlockCCBurningAbyssalAction::Execute(Event event)
     if (!group)
         return false;
 
-    const GuidVector& npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    const GuidVector& npcs = GET_NEAREST_HOSTILE_NPCS();
 
     std::vector<Unit*> abyssals;
     for (auto const& npc : npcs)

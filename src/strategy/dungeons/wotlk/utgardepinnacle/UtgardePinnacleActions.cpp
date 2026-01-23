@@ -5,7 +5,7 @@
 bool AvoidFreezingCloudAction::Execute(Event event)
 {
     Unit* closestTrigger = nullptr;
-    GuidVector objects = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector objects = GET_NEAREST_HOSTILE_NPCS();
 
     for (auto i = objects.begin(); i != objects.end(); ++i)
     {

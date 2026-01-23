@@ -44,6 +44,7 @@ public:
     template <class T>
     Value<T>* GetValue(std::string const name)
     {
+        // dynamic_cast required: UntypedValue and Value<T> are sibling bases in CalculatedValue<T>
         return dynamic_cast<Value<T>*>(GetUntypedValue(name));
     }
 

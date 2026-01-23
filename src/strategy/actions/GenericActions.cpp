@@ -129,7 +129,7 @@ bool PetAttackAction::Execute(Event event)
     if (pet->GetReactState() == REACT_PASSIVE)
         return false;
 
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
 

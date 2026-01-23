@@ -39,7 +39,7 @@ bool HunterAspectOfTheHawkTrigger::IsActive()
 
 bool HunterNoStingsActiveTrigger::IsActive()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     return DebuffTrigger::IsActive() && target && !botAI->HasAura("serpent sting", target, false, true) &&
            !botAI->HasAura("scorpid sting", target, false, true) && !botAI->HasAura("viper sting", target, false, true);
     return BuffTrigger::IsActive();
@@ -93,7 +93,7 @@ bool HunterHasAmmoTrigger::IsActive() { return !AmmoCountTrigger::IsActive(); }
 
 bool SwitchToRangedTrigger::IsActive()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     return botAI->HasStrategy("close", BOT_STATE_COMBAT) && target &&
            (target->GetVictim() != bot &&
             sServerFacade->IsDistanceGreaterThan(AI_VALUE2(float, "distance", "current target"), 8.0f));
@@ -101,7 +101,7 @@ bool SwitchToRangedTrigger::IsActive()
 
 bool SwitchToMeleeTrigger::IsActive()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     return botAI->HasStrategy("ranged", BOT_STATE_COMBAT) && target &&
            (target->GetVictim() == bot &&
             sServerFacade->IsDistanceLessOrEqualThan(AI_VALUE2(float, "distance", "current target"), 8.0f));
@@ -160,7 +160,7 @@ bool VolleyChannelCheckTrigger::IsActive()
         // Only trigger if the spell being channeled is Volley
         if (VOLLEY_SPELL_IDS.count(spell->m_spellInfo->Id))
         {
-            uint8 attackerCount = AI_VALUE(uint8, "attacker count");
+            uint8 attackerCount = GET_ATTACKER_COUNT();
             return attackerCount < minEnemies;
         }
     }

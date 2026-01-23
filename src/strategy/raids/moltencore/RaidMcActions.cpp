@@ -98,7 +98,7 @@ bool McGolemaggTankAction::MoveUnitToPosition(Unit* target, const Position& tank
 bool McGolemaggTankAction::FindCoreRagers(Unit*& coreRager1, Unit*& coreRager2) const
 {
     coreRager1 = coreRager2 = nullptr;
-    for (auto const& target : AI_VALUE(GuidVector, "possible targets no los"))
+    for (auto const& target : GET_POSSIBLE_TARGETS_NO_LOS())
     {
         Unit* unit = botAI->GetUnit(target);
         if (unit && unit->IsAlive() && unit->GetEntry() == NPC_CORE_RAGER)

@@ -19,8 +19,8 @@ bool MoveFromBronjahmAction::Execute(Event event)
 
 bool AttackCorruptedSoulFragmentAction::Execute(Event event)
 {
-    Unit* currentTarget = AI_VALUE(Unit*, "current target");
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    Unit* currentTarget = GET_CURRENT_TARGET();
+    GuidVector targets = GET_POSSIBLE_TARGETS();
 
     // If no valid skull target, search for corrupted soul fragment
     Unit* empoweredPrince = nullptr;
@@ -68,7 +68,7 @@ bool BronjahmGroupPositionAction::Execute(Event event)
         // If any corrupted soul exists, handle positioning carefully
         if (activeSoulExists)
         {
-            GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+            GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
             for (auto& npc : npcs)
             {
                 Unit* unit = botAI->GetUnit(npc);

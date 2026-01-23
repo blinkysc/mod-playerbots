@@ -42,7 +42,7 @@ bool AcceptQuestAction::Execute(Event event)
 
     if (event.getPacket().empty())
     {
-        GuidVector npcs = AI_VALUE(GuidVector, "nearest npcs");
+        GuidVector npcs = GET_NEAREST_NPCS();
         for (auto i = npcs.begin(); i != npcs.end(); i++)
         {
             Unit* unit = botAI->GetUnit(*i);

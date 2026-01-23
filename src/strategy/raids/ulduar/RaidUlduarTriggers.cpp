@@ -121,7 +121,7 @@ bool RazorscaleDevouringFlamesTrigger::IsActive()
     if (!boss)
         return false;
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -140,7 +140,7 @@ bool RazorscaleAvoidSentinelTrigger::IsActive()
     if (!boss)
         return false;
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -159,7 +159,7 @@ bool RazorscaleAvoidWhirlwindTrigger::IsActive()
     if (!boss)
         return false;
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -342,7 +342,7 @@ bool KologarnMarkDpsTargetTrigger::IsActive()
     }
 
     // Check that there is rubble to mark
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -616,7 +616,7 @@ bool FreyaMarkDpsTargetTrigger::IsActive()
     Unit* stormLasher = nullptr;
     Unit* firstDetonatingLasher = nullptr;
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -731,7 +731,7 @@ bool FreyaMoveToHealingSporeTrigger::IsActive()
     if (!conservatory || !conservatory->IsAlive())
         return false;
 
-    GuidVector targets = AI_VALUE(GuidVector, "nearest npcs");
+    GuidVector targets = GET_NEAREST_NPCS();
     float nearestDistance = std::numeric_limits<float>::max();
     bool foundSpore = false;
 
@@ -1041,7 +1041,7 @@ bool ThorimArenaPositioningTrigger::IsActive()
             break;
     }
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -1167,7 +1167,7 @@ bool MimironPhase1PositioningTrigger::IsActive()
     Unit* vx001 = nullptr;
     Unit* aerialCommandUnit = nullptr;
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -1194,7 +1194,7 @@ bool MimironPhase1PositioningTrigger::IsActive()
         return false;
     }
 
-    return AI_VALUE(float, "disperse distance") != 6.0f;
+    return GET_DISPERSE_DISTANCE() != 6.0f;
 }
 
 bool MimironP3Wx2LaserBarrageTrigger::IsActive()
@@ -1231,7 +1231,7 @@ bool MimironRapidBurstTrigger::IsActive()
     Unit* vx001 = nullptr;
     Unit* aerialCommandUnit = nullptr;
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -1348,7 +1348,7 @@ bool MimironRapidBurstTrigger::IsActive()
         }
     }
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest npcs");
+    GuidVector npcs = GET_NEAREST_NPCS();
     float nearestRocketStrikeDistance = std::numeric_limits<float>::max();
     bool rocketStrikeDetected = false;
 
@@ -1381,7 +1381,7 @@ bool MimironAerialCommandUnitTrigger::IsActive()
     //Unit* bombBot = nullptr;
     Unit* assaultBot = nullptr;
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -1489,7 +1489,7 @@ bool MimironPhase4MarkDpsTrigger::IsActive()
         return false;
     }
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -1564,7 +1564,7 @@ bool MimironCheatTrigger::IsActive()
         return false;
     }
 
-    GuidVector targets = AI_VALUE(GuidVector, "nearest npcs");
+    GuidVector targets = GET_NEAREST_NPCS();
     for (const ObjectGuid& guid : targets)
     {
         Unit* unit = botAI->GetUnit(guid);
@@ -1815,7 +1815,7 @@ Unit* YoggSaronTrigger::GetNextIllusionRoomRtiTarget()
         return nullptr;
     }
 
-    GuidVector targets = AI_VALUE(GuidVector, "nearest npcs");
+    GuidVector targets = GET_NEAREST_NPCS();
 
     if (botAI->HasCheat(BotCheatMask::raid))
     {
@@ -1906,7 +1906,7 @@ bool YoggSaronGuardianPositioningTrigger::IsActive()
         return false;
     }
 
-    GuidVector targets = AI_VALUE(GuidVector, "nearest npcs");
+    GuidVector targets = GET_NEAREST_NPCS();
     bool thereIsAnyGuardian = false;
 
     for (const ObjectGuid& guid : targets)
@@ -2042,7 +2042,7 @@ bool YoggSaronMarkTargetTrigger::IsActive()
             return false;
         }
 
-        GuidVector targets = AI_VALUE(GuidVector, "nearest npcs");
+        GuidVector targets = GET_NEAREST_NPCS();
         for (const ObjectGuid& guid : targets)
         {
             Unit* unit = botAI->GetUnit(guid);
@@ -2355,7 +2355,7 @@ bool YoggSaronPhase3PositioningTrigger::IsActive()
             return true;
         }
 
-        GuidVector targets = AI_VALUE(GuidVector, "nearest npcs");
+        GuidVector targets = GET_NEAREST_NPCS();
         bool thereIsAnyGuardian = false;
 
         for (const ObjectGuid& guid : targets)

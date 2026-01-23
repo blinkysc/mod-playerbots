@@ -158,7 +158,7 @@ bool FlameLeviathanVehicleAction::DemolisherTurretAction(Unit* target)
 {
     int32 liquidCount = 0;
     {
-        GuidVector npcs = AI_VALUE(GuidVector, "nearest npcs");
+        GuidVector npcs = GET_NEAREST_NPCS();
         for (auto i = npcs.begin(); i != npcs.end(); i++)
         {
             Unit* unit = botAI->GetUnit(*i);
@@ -183,7 +183,7 @@ bool FlameLeviathanVehicleAction::DemolisherTurretAction(Unit* target)
     }
     if (liquidCount <= 10)
     {
-        GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+        GuidVector targets = GET_POSSIBLE_TARGETS();
         for (auto i = targets.begin(); i != targets.end(); i++)
         {
             Unit* unit = botAI->GetUnit(*i);
@@ -440,7 +440,7 @@ bool RazorscaleAvoidDevouringFlameAction::Execute(Event event)
         return false;
     }
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     Unit* closestFlame = nullptr;
     float closestDistance = std::numeric_limits<float>::max();
 
@@ -481,7 +481,7 @@ bool RazorscaleAvoidDevouringFlameAction::isUseful()
     const float safeDistanceMultiplier = isMainTank ? 2.3f : 1.0f;
     const float safeDistance = flameRadius * safeDistanceMultiplier;
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -504,7 +504,7 @@ bool RazorscaleAvoidSentinelAction::Execute(Event event)
     bool isRanged = botAI->IsRanged(bot);
     const float radius = 8.0f;
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
 
     Unit* lowestHealthSentinel = nullptr;
     uint32 lowestHealth = UINT32_MAX;
@@ -532,7 +532,7 @@ bool RazorscaleAvoidSentinelAction::Execute(Event event)
     }
 
     // Check if the main tank is a human player
-    Unit* mainTankUnit = AI_VALUE(Unit*, "main tank");
+    Unit* mainTankUnit = GET_MAIN_TANK();
     Player* mainTank = mainTankUnit ? mainTankUnit->ToPlayer() : nullptr;
 
     if (mainTank && !GET_PLAYERBOT_AI(mainTank))  // Main tank is a real player
@@ -580,7 +580,7 @@ bool RazorscaleAvoidSentinelAction::Execute(Event event)
 bool RazorscaleAvoidSentinelAction::isUseful()
 {
     bool isMainTank = botAI->IsMainTank(bot);
-    Unit* mainTankUnit = AI_VALUE(Unit*, "main tank");
+    Unit* mainTankUnit = GET_MAIN_TANK();
     Player* mainTank = mainTankUnit ? mainTankUnit->ToPlayer() : nullptr;
 
     // If this bot is the main tank, it should always try to mark
@@ -604,7 +604,7 @@ bool RazorscaleAvoidSentinelAction::isUseful()
     bool isRanged = botAI->IsRanged(bot);
     const float radius = 8.0f;
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -628,7 +628,7 @@ bool RazorscaleAvoidWhirlwindAction::Execute(Event event)
     }
 
     const float radius = 8.0f;
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -653,7 +653,7 @@ bool RazorscaleAvoidWhirlwindAction::isUseful()
     }
 
     const float radius = 8.0f;
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -712,7 +712,7 @@ bool RazorscaleIgnoreBossAction::isUseful()
         }
 
         // Proceed to tank-specific logic
-        Unit* mainTankUnit = AI_VALUE(Unit*, "main tank");
+        Unit* mainTankUnit = GET_MAIN_TANK();
         Player* mainTank = mainTankUnit ? mainTankUnit->ToPlayer() : nullptr;
 
         // If this bot is the main tank, it needs to set the moon marker
@@ -780,7 +780,7 @@ bool RazorscaleIgnoreBossAction::Execute(Event event)
     }
 
     // Get the main tank and determine role
-    Unit* mainTankUnit = AI_VALUE(Unit*, "main tank");
+    Unit* mainTankUnit = GET_MAIN_TANK();
     Player* mainTank = mainTankUnit ? mainTankUnit->ToPlayer() : nullptr;
 
     // If the main tank is a human, assign the moon marker using the lowest-indexed bot tank
@@ -904,7 +904,7 @@ bool RazorscaleGroundedAction::Execute(Event event)
     if (!group)
         return false;
 
-    Unit* mainTankUnit = AI_VALUE(Unit*, "main tank");
+    Unit* mainTankUnit = GET_MAIN_TANK();
     Player* mainTank = mainTankUnit ? mainTankUnit->ToPlayer() : nullptr;
 
     if (mainTank && !GET_PLAYERBOT_AI(mainTank))  // Main tank is a human player
@@ -1026,7 +1026,7 @@ bool RazorscaleHarpoonAction::Execute(Event event)
     // Find the nearest ranged DPS (not a healer) to the harpoon
     Player* closestRangedDPS = nullptr;
     minDistance = std::numeric_limits<float>::max();
-    GuidVector groupBots = AI_VALUE(GuidVector, "group members");
+    GuidVector groupBots = GET_GROUP_MEMBERS();
 
     for (auto& guid : groupBots)
     {
@@ -1241,7 +1241,7 @@ bool KologarnMarkDpsTargetAction::Execute(Event event)
         return false;
 
     // Check that there is rubble to mark
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -1288,7 +1288,7 @@ bool KologarnMarkDpsTargetAction::Execute(Event event)
     }
 
     bool isMainTank = botAI->IsMainTank(bot);
-    Unit* mainTankUnit = AI_VALUE(Unit*, "main tank");
+    Unit* mainTankUnit = GET_MAIN_TANK();
     Player* mainTank = mainTankUnit ? mainTankUnit->ToPlayer() : nullptr;
 
     if (mainTank && !GET_PLAYERBOT_AI(mainTank))  // Main tank is a real player
@@ -1562,7 +1562,7 @@ bool HodirBitingColdJumpAction::Execute(Event event)
 
     // MotionMaster& mm = *bot->GetMotionMaster();
     // mm.Clear();
-    // mm.MoveJump(x, y, z, speed, speed, 1, AI_VALUE(Unit*, "current target"));
+    // mm.MoveJump(x, y, z, speed, speed, 1, GET_CURRENT_TARGET());
     // mm.MoveFall(0, true);
     // AI_VALUE(LastMovement&, "last movement").Set(mapId, x, y, z, bot->GetOrientation(), 1000, priority);
 
@@ -1622,7 +1622,7 @@ bool FreyaMarkDpsTargetAction::Execute(Event event)
     Unit* stormLasher = nullptr;
     Unit* firstDetonatingLasher = nullptr;
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -1708,7 +1708,7 @@ bool FreyaMarkDpsTargetAction::Execute(Event event)
     }
 
     bool isMainTank = botAI->IsMainTank(bot);
-    Unit* mainTankUnit = AI_VALUE(Unit*, "main tank");
+    Unit* mainTankUnit = GET_MAIN_TANK();
     Player* mainTank = mainTankUnit ? mainTankUnit->ToPlayer() : nullptr;
     int8 squareIndex = 5;  // Square
     int8 skullIndex = 7;   // Skull
@@ -1764,7 +1764,7 @@ bool FreyaMoveToHealingSporeAction::isUseful()
 
 bool FreyaMoveToHealingSporeAction::Execute(Event event)
 {
-    GuidVector targets = AI_VALUE(GuidVector, "nearest npcs");
+    GuidVector targets = GET_NEAREST_NPCS();
     Creature* nearestSpore = nullptr;
     float nearestDistance = std::numeric_limits<float>::max();
 
@@ -2198,7 +2198,7 @@ bool MimironShockBlastAction::Execute(Event event)
 
     float radius = 20.0f;
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -2304,7 +2304,7 @@ bool MimironRapidBurstAction::Execute(Event event)
 {
     Unit* leviathanMkII = nullptr;
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -2386,7 +2386,7 @@ bool MimironRapidBurstAction::Execute(Event event)
     MoveTo(bot->GetMapId(), targetPosition.GetPositionX(), targetPosition.GetPositionY(), targetPosition.GetPositionZ(),
            false, false, false, true, MovementPriority::MOVEMENT_FORCED, true, false);
 
-    if (AI_VALUE(float, "disperse distance") != 0.0f)
+    if (GET_DISPERSE_DISTANCE() != 0.0f)
     {
         SET_AI_VALUE(float, "disperse distance", 0.0f);
     }
@@ -2413,7 +2413,7 @@ bool MimironAerialCommandUnitAction::Execute(Event event)
     Unit* bombBot = nullptr;
     Unit* assaultBot = nullptr;
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -2465,7 +2465,7 @@ bool MimironAerialCommandUnitAction::Execute(Event event)
         return true;
     }
 
-    if (AI_VALUE(float, "disperse distance") != 5.0f)
+    if (GET_DISPERSE_DISTANCE() != 5.0f)
     {
         SET_AI_VALUE(float, "disperse distance", 5.0f);
     }
@@ -2485,7 +2485,7 @@ bool MimironRocketStrikeAction::Execute(Event event)
     Unit* vx001 = nullptr;
     Unit* aerialCommandUnit = nullptr;
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -2552,7 +2552,7 @@ bool MimironPhase4MarkDpsAction::Execute(Event event)
         return false;
     }
 
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     Unit* target = nullptr;
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -2620,7 +2620,7 @@ bool MimironPhase4MarkDpsAction::Execute(Event event)
     }
     else
     {
-        /*if (AI_VALUE(float, "disperse distance") != 0.0f)
+        /*if (GET_DISPERSE_DISTANCE() != 0.0f)
         {
             SET_AI_VALUE(float, "disperse distance", 0.0f);
         }*/
@@ -2631,7 +2631,7 @@ bool MimironPhase4MarkDpsAction::Execute(Event event)
 
 bool MimironCheatAction::Execute(Event event)
 {
-    GuidVector targets = AI_VALUE(GuidVector, "nearest npcs");
+    GuidVector targets = GET_NEAREST_NPCS();
     for (const ObjectGuid& guid : targets)
     {
         Unit* unit = botAI->GetUnit(guid);
@@ -2818,7 +2818,7 @@ bool YoggSaronMarkTargetAction::Execute(Event event)
             botAI->ChangeStrategy(ADD_STRATEGY_CHAR + tankAssistStrategy.getName(), BotState::BOT_STATE_COMBAT);
         }
 
-        GuidVector targets = AI_VALUE(GuidVector, "nearest npcs");
+        GuidVector targets = GET_NEAREST_NPCS();
 
         int lowestHealth = std::numeric_limits<int>::max();
         Unit* lowestHealthUnit = nullptr;

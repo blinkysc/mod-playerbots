@@ -45,7 +45,7 @@ float IccLadyDeathwhisperMultiplier::GetValue(Action* action)
     static constexpr uint32 VENGEFUL_SHADE_ID = NPC_SHADE;
 
     // Get the nearest hostile NPCs
-    const GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    const GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
 
     // Allow the IccShadeLadyDeathwhisperAction to run
     if (dynamic_cast<IccShadeLadyDeathwhisperAction*>(action))
@@ -368,7 +368,7 @@ float IccBpcAssistMultiplier::GetValue(Action* action)
 
     static const std::array<uint32, 4> bombEntries = {NPC_KINETIC_BOMB1, NPC_KINETIC_BOMB2, NPC_KINETIC_BOMB3,
                                                       NPC_KINETIC_BOMB4};
-    const GuidVector bombs = AI_VALUE(GuidVector, "possible targets no los");
+    const GuidVector bombs = GET_POSSIBLE_TARGETS_NO_LOS();
 
     bool bombFound = false;
 
@@ -667,7 +667,7 @@ float IccLichKingAddsMultiplier::GetValue(Action* action)
 
     if (terenasMenethilHC)
     {
-        Unit* mainTank = AI_VALUE(Unit*, "main tank");
+        Unit* mainTank = GET_MAIN_TANK();
 
         if (!botAI->IsMainTank(bot) && mainTank && bot->GetExactDist2d(mainTank->GetPositionX(), mainTank->GetPositionY()) < 2.0f)
         {
@@ -781,7 +781,7 @@ float IccLichKingAddsMultiplier::GetValue(Action* action)
             return 0.0f;
     }
 
-    Unit* currentTarget = AI_VALUE(Unit*, "current target");
+    Unit* currentTarget = GET_CURRENT_TARGET();
 
     bool hasWinterAura = false;
     if (boss && (boss->HasAura(SPELL_REMORSELESS_WINTER1) || boss->HasAura(SPELL_REMORSELESS_WINTER2) ||
@@ -841,7 +841,7 @@ float IccLichKingAddsMultiplier::GetValue(Action* action)
     if (botAI->IsRanged(bot) && !botAI->GetAura("Harvest Soul", bot, false, false))
     {
         // Check for defile presence
-        GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+        GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
         bool defilePresent = false;
         for (auto& npc : npcs)
         {

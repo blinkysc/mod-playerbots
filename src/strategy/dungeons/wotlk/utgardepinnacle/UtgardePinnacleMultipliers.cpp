@@ -52,7 +52,7 @@ float SkadiMultiplier::GetValue(Action* action)
         // }
 
         // // Otherwise, check for persistent ground objects emitting the freezing cloud
-        // GuidVector objects = AI_VALUE(GuidVector, "nearest hostile npcs");
+        // GuidVector objects = GET_NEAREST_HOSTILE_NPCS();
         // for (auto i = objects.begin(); i != objects.end(); ++i)
         // {
         //     Unit* unit = botAI->GetUnit(*i);

@@ -130,7 +130,7 @@ bool FindCorpseAction::Execute(Event event)
             return false;
         else
         {
-            GuidVector units = AI_VALUE(GuidVector, "possible targets no los");
+            GuidVector units = GET_POSSIBLE_TARGETS_NO_LOS();
 
             if (botPos.getUnitsAggro(units, bot) == 0)  // There are no mobs near.
                 return false;
@@ -310,7 +310,7 @@ bool SpiritHealerAction::Execute(Event event)
 
     if (bot->GetDistance2d(ClosestGrave->x, ClosestGrave->y) < sPlayerbotAIConfig->sightDistance)
     {
-        GuidVector npcs = AI_VALUE(GuidVector, "nearest npcs");
+        GuidVector npcs = GET_NEAREST_NPCS();
         for (GuidVector::iterator i = npcs.begin(); i != npcs.end(); i++)
         {
             Unit* unit = botAI->GetUnit(*i);

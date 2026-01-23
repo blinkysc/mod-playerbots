@@ -189,7 +189,7 @@ public:
 
     WorldLocation GetLocation() override
     {
-        Unit* target = AI_VALUE(Unit*, "current target");
+        Unit* target = GET_CURRENT_TARGET();
         Player* master = GetMaster();
 
         // Fix: if no target OR target is the bot, fall back to master

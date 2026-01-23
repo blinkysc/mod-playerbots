@@ -468,7 +468,7 @@ public:
     virtual std::string const GetTargetName() override { return "self target"; }
     virtual bool isUseful() override
     {
-        Unit* target = AI_VALUE(Unit*, "current target");
+        Unit* target = GET_CURRENT_TARGET();
         if (!target || !bot->IsWithinMeleeRange(target))
             return false;
         return CastTotemAction::isUseful();

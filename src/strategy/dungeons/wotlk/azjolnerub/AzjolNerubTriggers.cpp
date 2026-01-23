@@ -9,7 +9,7 @@ bool KrikthirWebWrapTrigger::IsActive()
 
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+    GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -29,7 +29,7 @@ bool KrikthirWatchersTrigger::IsActive()
 
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+    GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {

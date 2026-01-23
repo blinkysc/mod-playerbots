@@ -19,7 +19,7 @@ bool RewardAction::Execute(Event event)
 
     uint32 itemId = *itemIds.begin();
 
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest npcs");
+    GuidVector npcs = GET_NEAREST_NPCS();
     for (ObjectGuid const guid : npcs)
     {
         if (Unit* npc = botAI->GetUnit(guid))

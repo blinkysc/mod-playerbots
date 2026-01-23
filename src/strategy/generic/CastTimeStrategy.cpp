@@ -13,7 +13,7 @@ float CastTimeMultiplier::GetValue(Action* action)
     if (action == nullptr)
         return 1.0f;
 
-    if (!action->GetTarget() || action->GetTarget() != AI_VALUE(Unit*, "current target"))
+    if (!action->GetTarget() || action->GetTarget() != GET_CURRENT_TARGET())
         return 1.0f;
 
     if (/*targetHealth < sPlayerbotAIConfig->criticalHealth && */ dynamic_cast<CastSpellAction*>(action))

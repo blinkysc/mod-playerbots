@@ -73,9 +73,9 @@ bool CastAutoShotAction::isUseful()
     if (botAI->IsInVehicle() && !botAI->IsInVehicle(false, false, true))
         return false;
 
-    if (AI_VALUE(Unit*, "current target") && bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL) &&
+    if (GET_CURRENT_TARGET() && bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL) &&
         bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)->m_targets.GetUnitTargetGUID() ==
-            AI_VALUE(Unit*, "current target")->GetGUID())
+            GET_CURRENT_TARGET()->GetGUID())
     {
         return false;
     }
@@ -84,7 +84,7 @@ bool CastAutoShotAction::isUseful()
 
 bool CastDisengageAction::Execute(Event event)
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
     // can cast spell check passed in isUseful()

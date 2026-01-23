@@ -7,6 +7,7 @@
 #define _PLAYERBOT_PLAYERBOTSPELLCACHE_H
 
 #include "Playerbots.h"
+#include <unordered_map>
 
 class PlayerbotSpellCache
 {
@@ -22,11 +23,17 @@ public:
     SkillLineAbilityEntry const* GetSkillLine(uint32 spellId) const;
     bool IsItemBuyable(uint32 itemId) const;
 
+    // Fast spell name to ID lookup - O(1) instead of iterating all aura types
+    uint32 GetSpellIdByName(std::string const& name) const;
+
 private:
     PlayerbotSpellCache() = default;
 
     std::map<uint32, SkillLineAbilityEntry const*> skillSpells;
     std::set<uint32> vendorItems;
+
+    // Spell name cache: lowercase spell name -> spell ID (first/base rank)
+    std::unordered_map<std::string, uint32> spellNameToId;
 };
 
 #define sPlayerbotSpellCache PlayerbotSpellCache::Instance()

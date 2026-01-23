@@ -17,7 +17,7 @@ bool SladranSnakeWrapTrigger::IsActive()
 
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
 
     for (auto& target : targets)
     {

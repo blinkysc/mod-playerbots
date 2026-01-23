@@ -8,7 +8,7 @@ bool AttackErekemAction::Execute(Event event)
     Unit* boss = AI_VALUE2(Unit*, "find target", "erekem");
     if (!boss) { return false; }
 
-    if (AI_VALUE(Unit*, "current target") != boss)
+    if (GET_CURRENT_TARGET() != boss)
         {
             return Attack(boss);
         }
@@ -20,12 +20,12 @@ bool AttackIchorGlobuleAction::Execute(Event event)
     Unit* boss = AI_VALUE2(Unit*, "find target", "ichoron");
     if (!boss) { return false; }
 
-    Unit* currentTarget = AI_VALUE(Unit*, "current target");
+    Unit* currentTarget = GET_CURRENT_TARGET();
 
     // Tank prioritise boss if it's up
     if (botAI->IsTank(bot) && !boss->HasAura(SPELL_DRAINED))
     {
-        if (AI_VALUE(Unit*, "current target") != boss)
+        if (GET_CURRENT_TARGET() != boss)
         {
             return Attack(boss);
         }
@@ -34,7 +34,7 @@ bool AttackIchorGlobuleAction::Execute(Event event)
 
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
 
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -65,12 +65,12 @@ bool AttackVoidSentryAction::Execute(Event event)
     Unit* boss = AI_VALUE2(Unit*, "find target", "zuramat the obliterator");
     if (!boss) { return false; }
 
-    Unit* currentTarget = AI_VALUE(Unit*, "current target");
+    Unit* currentTarget = GET_CURRENT_TARGET();
 
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    // GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+    // GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
+    GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {

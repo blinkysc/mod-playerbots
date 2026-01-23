@@ -20,6 +20,7 @@
 #include "NewRpgStrategy.h"
 #include "PlayerbotAIBase.h"
 #include "PlayerbotAIConfig.h"
+#include "BotState.h"
 #include "PlayerbotSecurity.h"
 #include "PlayerbotTextMgr.h"
 #include "SpellAuras.h"
@@ -569,6 +570,7 @@ public:
 
     void SetMaster(Player* newMaster) { master = newMaster; }
     AiObjectContext* GetAiObjectContext() { return aiObjectContext; }
+    BotValueCache& GetValueCache() { return valueCache; }
     ChatHelper* GetChatHelper() { return &chatHelper; }
     bool IsOpposing(Player* player);
     static bool IsOpposing(uint8 race1, uint8 race2);
@@ -630,6 +632,7 @@ protected:
     Player* master;
     uint32 accountId;
     AiObjectContext* aiObjectContext;
+    BotValueCache valueCache;
     Engine* currentEngine;
     Engine* engines[BOT_STATE_MAX];
     BotState currentState;

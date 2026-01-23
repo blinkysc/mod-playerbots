@@ -99,7 +99,7 @@ bool ShatteringThrowTrigger::IsActive()
         return false;
     }
 
-    GuidVector enemies = AI_VALUE(GuidVector, "possible targets");
+    GuidVector enemies = GET_POSSIBLE_TARGETS();
 
     for (ObjectGuid const& guid : enemies)
     {

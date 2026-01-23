@@ -62,7 +62,7 @@ bool CastFearOnCcAction::isPossible()
 // Checks if the enemies are close enough to use Shadowflame
 bool CastShadowflameAction::isUseful()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
     bool facingTarget = AI_VALUE2(bool, "facing", "current target");
@@ -84,7 +84,7 @@ bool CastRainOfFireAction::isUseful()
 // Checks if the enemies are close enough to use Hellfire
 bool CastHellfireAction::isUseful()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
 
@@ -97,7 +97,7 @@ bool CastImmolationAuraAction::isUseful()
     if (botAI->HasStrategy("meta melee", BOT_STATE_COMBAT))
         return true;
 
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
         return false;
 

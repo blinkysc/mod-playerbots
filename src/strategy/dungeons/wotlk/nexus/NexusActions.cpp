@@ -59,7 +59,7 @@ bool FirebombSpreadAction::Execute(Event event)
     float targetDist = radius + 1.0f;
     if (!boss) { return false; }
 
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     for (auto& member : members)
     {
         Unit* unit = botAI->GetUnit(member);
@@ -106,7 +106,7 @@ bool TelestraSplitTargetAction::Execute(Event event)
         // Attack the first valid split target in the priority list
         if (target)
         {
-            if (AI_VALUE(Unit*, "current target") != target)
+            if (GET_CURRENT_TARGET() != target)
             {
                 return Attack(target);
             }
@@ -127,7 +127,7 @@ bool ChaoticRiftTargetAction::Execute(Event event)
 
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+    GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -138,7 +138,7 @@ bool ChaoticRiftTargetAction::Execute(Event event)
             break;
         }
     }
-    if (!chaoticRift || AI_VALUE(Unit*, "current target") == chaoticRift)
+    if (!chaoticRift || GET_CURRENT_TARGET() == chaoticRift)
     {
         return false;
     }

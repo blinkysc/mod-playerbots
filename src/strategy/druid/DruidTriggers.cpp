@@ -24,7 +24,7 @@ bool ThornsOnPartyTrigger::IsActive()
 
 bool EntanglingRootsKiteTrigger::IsActive()
 {
-    return DebuffTrigger::IsActive() && AI_VALUE(uint8, "attacker count") < 3 && !GetTarget()->GetPower(POWER_MANA);
+    return DebuffTrigger::IsActive() && GET_ATTACKER_COUNT() < 3 && !GetTarget()->GetPower(POWER_MANA);
 }
 
 bool ThornsTrigger::IsActive() { return BuffTrigger::IsActive() && !botAI->HasAura("thorns", GetTarget()); }
@@ -53,7 +53,7 @@ bool HurricaneChannelCheckTrigger::IsActive()
         // Only trigger if the spell being channeled is Hurricane
         if (HURRICANE_SPELL_IDS.count(spell->m_spellInfo->Id))
         {
-            uint8 attackerCount = AI_VALUE(uint8, "attacker count");
+            uint8 attackerCount = GET_ATTACKER_COUNT();
             return attackerCount < minEnemies;
         }
     }

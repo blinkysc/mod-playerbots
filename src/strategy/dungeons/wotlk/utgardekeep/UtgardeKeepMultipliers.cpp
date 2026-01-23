@@ -12,7 +12,7 @@ float PrinceKelesethMultiplier::GetValue(Action* action)
     // Suppress auto-targeting behaviour only when a tomb is up
     if (dynamic_cast<DpsAssistAction*>(action))
     {
-        GuidVector members = AI_VALUE(GuidVector, "group members");
+        GuidVector members = GET_GROUP_MEMBERS();
         for (auto& member : members)
         {
             Unit* unit = botAI->GetUnit(member);

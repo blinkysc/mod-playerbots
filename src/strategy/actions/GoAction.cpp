@@ -93,7 +93,7 @@ bool GoAction::Execute(Event event)
     }
 
     GuidVector units;
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest npcs");
+    GuidVector npcs = GET_NEAREST_NPCS();
     units.insert(units.end(), npcs.begin(), npcs.end());
     GuidVector players = AI_VALUE(GuidVector, "nearest friendly players");
     units.insert(units.end(), players.begin(), players.end());

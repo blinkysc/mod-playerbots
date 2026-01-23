@@ -10,7 +10,7 @@ bool ShatterSpreadAction::Execute(Event event)
     float radius = 40.0f;
     Unit* closestMember = nullptr;
 
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     for (auto& member : members)
     {
         Unit* unit = botAI->GetUnit(member);

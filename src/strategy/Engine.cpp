@@ -430,11 +430,15 @@ bool Engine::HasStrategy(std::string const name) { return strategies.find(name) 
 
 void Engine::ProcessTriggers(bool minimal)
 {
-    std::unordered_map<Trigger*, Event> fires;
+    // Use vector instead of map for small number of fires - avoids hash overhead
+    std::vector<std::pair<Trigger*, Event>> fires;
+    fires.reserve(16);  // Pre-allocate for typical case
+
     uint32 now = getMSTime();
-    for (std::vector<TriggerNode*>::iterator i = triggers.begin(); i != triggers.end(); i++)
+
+    // Single pass: check triggers, collect fires, and reset in one loop
+    for (TriggerNode* node : triggers)
     {
-        TriggerNode* node = *i;
         if (!node)
             continue;
 
@@ -448,13 +452,24 @@ void Engine::ProcessTriggers(bool minimal)
         if (!trigger)
             continue;
 
-        if (fires.find(trigger) != fires.end())
-            continue;
+        // Check if already fired (linear search is faster for small vectors)
+        bool alreadyFired = false;
+        for (auto& fire : fires)
+        {
+            if (fire.first == trigger)
+            {
+                alreadyFired = true;
+                break;
+            }
+        }
 
-        if (testMode || trigger->needCheck(now))
+        if (!alreadyFired && (testMode || trigger->needCheck(now)))
         {
             if (minimal && node->getFirstRelevance() < 100)
+            {
+                trigger->Reset();
                 continue;
+            }
 
             PerformanceMonitorOperation* pmo =
                 sPerformanceMonitor->start(PERF_MON_TRIGGER, trigger->getName(), &aiObjectContext->performanceStack);
@@ -462,29 +477,35 @@ void Engine::ProcessTriggers(bool minimal)
             if (pmo)
                 pmo->finish();
 
-            if (!event)
-                continue;
-
-            fires[trigger] = event;
-            LogAction("T:%s", trigger->getName().c_str());
+            if (!!event)  // Event has operator! but not operator bool
+            {
+                fires.emplace_back(trigger, event);
+                LogAction("T:%s", trigger->getName().c_str());
+            }
         }
+
+        trigger->Reset();
     }
 
-    for (std::vector<TriggerNode*>::iterator i = triggers.begin(); i != triggers.end(); i++)
+    // Second pass: push handlers for fired triggers
+    for (TriggerNode* node : triggers)
     {
-        TriggerNode* node = *i;
-        Trigger* trigger = node->getTrigger();
-        if (fires.find(trigger) == fires.end())
+        if (!node)
             continue;
 
-        Event event = fires[trigger];
-        MultiplyAndPush(node->getHandlers(), 0.0f, false, event, "trigger");
-    }
+        Trigger* trigger = node->getTrigger();
+        if (!trigger)
+            continue;
 
-    for (std::vector<TriggerNode*>::iterator i = triggers.begin(); i != triggers.end(); i++)
-    {
-        if (Trigger* trigger = (*i)->getTrigger())
-            trigger->Reset();
+        // Find if this trigger fired
+        for (auto& fire : fires)
+        {
+            if (fire.first == trigger)
+            {
+                MultiplyAndPush(node->getHandlers(), 0.0f, false, fire.second, "trigger");
+                break;
+            }
+        }
     }
 }
 

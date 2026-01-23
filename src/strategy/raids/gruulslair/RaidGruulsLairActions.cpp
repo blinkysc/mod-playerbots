@@ -409,7 +409,7 @@ bool HighKingMaulgarBanishFelstalkerAction::Execute(Event event)
     if (!group)
         return false;
 
-    const GuidVector& npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    const GuidVector& npcs = GET_NEAREST_HOSTILE_NPCS();
     std::vector<Unit*> felStalkers;
     for (auto const& npc : npcs)
     {
@@ -668,7 +668,7 @@ bool GruulTheDragonkillerShatterSpreadAction::Execute(Event event)
     if (!group)
         return false;
 
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     Unit* closestMember = nullptr;
     float closestDist = std::numeric_limits<float>::max();
 

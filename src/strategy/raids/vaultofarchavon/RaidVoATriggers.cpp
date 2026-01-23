@@ -31,7 +31,7 @@ bool EmalonMarkBossTrigger::IsActive()
 
     // Check if there is any overcharged minion
     Unit* overchargedMinion = nullptr;
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -92,7 +92,7 @@ bool EmalonOverchargeTrigger::IsActive()
 
     // Check if there is any overcharged minion
     Unit* overchargedMinion = nullptr;
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs)
     {
         Unit* unit = botAI->GetUnit(npc);

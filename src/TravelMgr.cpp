@@ -1204,7 +1204,7 @@ bool QuestObjectiveTravelDestination::isActive(Player* bot)
 
     if (getEntry() > 0 && !isOut(&botPos))
     {
-        GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+        GuidVector targets = GET_POSSIBLE_TARGETS();
 
         for (auto& target : targets)
             if (target.GetEntry() == getEntry() && target.IsCreature() && botAI->GetCreature(target) &&
@@ -1402,7 +1402,7 @@ bool BossTravelDestination::isActive(Player* bot)
     WorldPosition botPos(bot);
     if (!isOut(&botPos))
     {
-        GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+        GuidVector targets = GET_POSSIBLE_TARGETS();
 
         for (auto& target : targets)
             if (target.GetEntry() == getEntry() && target.IsCreature() && botAI->GetCreature(target) &&

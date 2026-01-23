@@ -143,7 +143,7 @@ bool IccDbsMainTankRuneOfBloodTrigger::IsActive()
     if (!botAI->IsAssistTankOfIndex(bot, 0))
         return false;
 
-    Unit* mt = AI_VALUE(Unit*, "main tank");
+    Unit* mt = GET_MAIN_TANK();
     if (!mt)
         return false;
 
@@ -167,7 +167,7 @@ bool IccStinkyPreciousMainTankMortalWoundTrigger::IsActive()
     if (!botAI->IsAssistTankOfIndex(bot, 0))
         return false;
 
-    Unit* mt = AI_VALUE(Unit*, "main tank");
+    Unit* mt = GET_MAIN_TANK();
     if (!mt)
         return false;
 
@@ -202,7 +202,7 @@ bool IccFestergutMainTankGastricBloatTrigger::IsActive()
     {
         return false;
     }
-    Unit* mt = AI_VALUE(Unit*, "main tank");
+    Unit* mt = GET_MAIN_TANK();
     if (!mt)
     {
         return false;
@@ -298,7 +298,7 @@ bool IccPutricideGrowingOozePuddleTrigger::IsActive()
         //-------CHEAT-------
     }
 
-    const GuidVector& npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    const GuidVector& npcs = GET_NEAREST_HOSTILE_NPCS();
     for (auto const& npc : npcs)
     {
         if (Unit* unit = botAI->GetUnit(npc))
@@ -356,7 +356,7 @@ bool IccPutricideMainTankMutatedPlagueTrigger::IsActive()
     {
         return false;
     }
-    Unit* mt = AI_VALUE(Unit*, "main tank");
+    Unit* mt = GET_MAIN_TANK();
     if (!mt)
     {
         return false;
@@ -471,7 +471,7 @@ bool IccBpcKineticBombTrigger::IsActive()
 
     static const std::array<uint32, 4> bombEntries = {NPC_KINETIC_BOMB1, NPC_KINETIC_BOMB2, NPC_KINETIC_BOMB3,
                                                       NPC_KINETIC_BOMB4};
-    const GuidVector bombs = AI_VALUE(GuidVector, "possible targets no los");
+    const GuidVector bombs = GET_POSSIBLE_TARGETS_NO_LOS();
 
     bool bombFound = false;
 
@@ -1000,7 +1000,7 @@ bool IccSindragosaMainTankMysticBuffetTrigger::IsActive()
     if (bot->HasAura(SPELL_FROST_BEACON))   // Frost Beacon
         return false;
 
-    Unit* mt = AI_VALUE(Unit*, "main tank");
+    Unit* mt = GET_MAIN_TANK();
     if (!mt)
         return false;
 
@@ -1045,7 +1045,7 @@ bool IccSindragosaTankSwapPositionTrigger::IsActive()
         return false;
 
     // Check if main tank has high stacks
-    Unit* mt = AI_VALUE(Unit*, "main tank");
+    Unit* mt = GET_MAIN_TANK();
     if (!mt)
         return false;
 
@@ -1099,7 +1099,7 @@ bool IccLichKingShadowTrapTrigger::IsActive()
         return false;
 
     // search for all nearby traps
-    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs = GET_NEAREST_HOSTILE_NPCS();
     std::vector<Unit*> nearbyTraps;
     bool needToMove = false;
 

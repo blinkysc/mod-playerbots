@@ -13,7 +13,7 @@ bool IckAndKrickAction::Execute(Event event)
     bool orb = false;
 
     // First gather all orbs
-    GuidVector npcs1 = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs1 = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs1)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -143,7 +143,7 @@ bool IckAndKrickAction::ExplosiveBarrage(bool explosiveBarrage, Unit* boss)
     float closestDistance = std::numeric_limits<float>::max();
 
     // First gather all orbs
-    GuidVector npcs1 = AI_VALUE(GuidVector, "nearest hostile npcs");
+    GuidVector npcs1 = GET_NEAREST_HOSTILE_NPCS();
     for (auto& npc : npcs1)
     {
         Unit* unit = botAI->GetUnit(npc);
@@ -291,7 +291,7 @@ bool TyrannusAction::RangedSpread(bool rangedSpread)
     float radius = 10.0f;
     float moveIncrement = 3.0f;
 
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     if (botAI->IsRanged(bot) && rangedSpread)
     {
         // Ranged: spread from other members

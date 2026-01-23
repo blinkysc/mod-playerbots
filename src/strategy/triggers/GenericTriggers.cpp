@@ -54,7 +54,7 @@ bool PetAttackTrigger::IsActive()
     {
         return false;
     }
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target)
     {
         return false;
@@ -95,7 +95,7 @@ bool ComboPointsNotFullTrigger::IsActive() { return AI_VALUE2(uint8, "combo", "c
 
 bool TargetWithComboPointsLowerHealTrigger::IsActive()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (!target || !target->IsAlive() || !target->IsInWorld())
     {
         return false;
@@ -189,12 +189,12 @@ Value<Unit*>* DebuffOnMeleeAttackerTrigger::GetTargetValue()
 
 bool NoAttackersTrigger::IsActive()
 {
-    return !AI_VALUE(Unit*, "current target") && AI_VALUE(uint8, "my attacker count") > 0;
+    return !GET_CURRENT_TARGET() && AI_VALUE(uint8, "my attacker count") > 0;
 }
 
 bool InvalidTargetTrigger::IsActive() { return AI_VALUE2(bool, "invalid target", "current target"); }
 
-bool NoTargetTrigger::IsActive() { return !AI_VALUE(Unit*, "current target"); }
+bool NoTargetTrigger::IsActive() { return !GET_CURRENT_TARGET(); }
 
 bool MyAttackerCountTrigger::IsActive()
 {
@@ -203,18 +203,18 @@ bool MyAttackerCountTrigger::IsActive()
 
 bool MediumThreatTrigger::IsActive()
 {
-    if (!AI_VALUE(Unit*, "main tank"))
+    if (!GET_MAIN_TANK())
         return false;
     return MyAttackerCountTrigger::IsActive();
 }
 
 bool LowTankThreatTrigger::IsActive()
 {
-    Unit* mt = AI_VALUE(Unit*, "main tank");
+    Unit* mt = GET_MAIN_TANK();
     if (!mt)
         return false;
 
-    Unit* current_target = AI_VALUE(Unit*, "current target");
+    Unit* current_target = GET_CURRENT_TARGET();
     if (!current_target)
         return false;
 
@@ -226,7 +226,7 @@ bool LowTankThreatTrigger::IsActive()
 
 bool AoeTrigger::IsActive()
 {
-    Unit* current_target = AI_VALUE(Unit*, "current target");
+    Unit* current_target = GET_CURRENT_TARGET();
     if (!current_target)
     {
         return false;
@@ -364,7 +364,7 @@ bool BoostTrigger::IsActive()
 {
     if (!BuffTrigger::IsActive())
         return false;
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (target && target->ToPlayer())
         return true;
     return AI_VALUE(uint8, "balance") <= balance;
@@ -372,7 +372,7 @@ bool BoostTrigger::IsActive()
 
 bool GenericBoostTrigger::IsActive()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     if (target && target->ToPlayer())
         return true;
     return AI_VALUE(uint8, "balance") <= balance;
@@ -461,7 +461,7 @@ bool DeflectSpellTrigger::IsActive()
     return false;
 }
 
-bool AttackerCountTrigger::IsActive() { return AI_VALUE(uint8, "attacker count") >= amount; }
+bool AttackerCountTrigger::IsActive() { return GET_ATTACKER_COUNT() >= amount; }
 
 bool HasAuraTrigger::IsActive() { return botAI->HasAura(getName(), GetTarget(), false, false, -1, true); }
 
@@ -501,10 +501,10 @@ bool HasNoAuraTrigger::IsActive() { return !botAI->HasAura(getName(), GetTarget(
 
 bool TankAssistTrigger::IsActive()
 {
-    if (!AI_VALUE(uint8, "attacker count"))
+    if (!GET_ATTACKER_COUNT())
         return false;
 
-    Unit* currentTarget = AI_VALUE(Unit*, "current target");
+    Unit* currentTarget = GET_CURRENT_TARGET();
     if (!currentTarget)
         return true;
 
@@ -517,7 +517,7 @@ bool TankAssistTrigger::IsActive()
 
 bool IsBehindTargetTrigger::IsActive()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     return target && AI_VALUE2(bool, "behind", "current target");
 }
 
@@ -527,7 +527,7 @@ bool IsNotBehindTargetTrigger::IsActive()
     {
         return false;
     }
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     return target && !AI_VALUE2(bool, "behind", "current target");
 }
 
@@ -549,7 +549,7 @@ bool NoMovementTrigger::IsActive() { return !AI_VALUE2(bool, "moving", "self tar
 
 bool NoPossibleTargetsTrigger::IsActive()
 {
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets");
+    GuidVector targets = GET_POSSIBLE_TARGETS();
     return !targets.size();
 }
 
@@ -557,11 +557,11 @@ bool PossibleAddsTrigger::IsActive() { return AI_VALUE(bool, "possible adds") &&
 
 bool NotDpsTargetActiveTrigger::IsActive()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GET_CURRENT_TARGET();
     // do not switch if enemy target
     if (target && target->IsAlive())
     {
-        Unit* enemy = AI_VALUE(Unit*, "enemy player target");
+        Unit* enemy = GET_ENEMY_PLAYER_TARGET();
         if (target == enemy)
             return false;
     }
@@ -573,8 +573,8 @@ bool NotDpsTargetActiveTrigger::IsActive()
 bool NotDpsAoeTargetActiveTrigger::IsActive()
 {
     Unit* dps = AI_VALUE(Unit*, "dps aoe target");
-    Unit* target = AI_VALUE(Unit*, "current target");
-    Unit* enemy = AI_VALUE(Unit*, "enemy player target");
+    Unit* target = GET_CURRENT_TARGET();
+    Unit* enemy = GET_ENEMY_PLAYER_TARGET();
 
     // do not switch if enemy target
     if (target && target == enemy && target->IsAlive())

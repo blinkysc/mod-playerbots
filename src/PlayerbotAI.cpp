@@ -44,6 +44,7 @@
 #include "PlayerbotDbStore.h"
 #include "PlayerbotMgr.h"
 #include "PlayerbotGuildMgr.h"
+#include "PlayerbotSpellCache.h"
 #include "Playerbots.h"
 #include "PointMovementGenerator.h"
 #include "PositionValue.h"
@@ -147,6 +148,7 @@ PlayerbotAI::PlayerbotAI(Player* bot)
     accountId = bot->GetSession()->GetAccountId();
 
     aiObjectContext = AiFactory::createAiObjectContext(bot, this);
+    valueCache.Initialize(aiObjectContext);
 
     engines[BOT_STATE_COMBAT] = AiFactory::createCombatEngine(bot, this, aiObjectContext);
     engines[BOT_STATE_NON_COMBAT] = AiFactory::createNonCombatEngine(bot, this, aiObjectContext);
@@ -2987,6 +2989,31 @@ Aura* PlayerbotAI::GetAura(std::string const name, Unit* unit, bool checkIsOwner
     if (!IsValidUnit(unit))
         return nullptr;
 
+    // Fast path: use cached spell ID lookup instead of iterating all 320 aura types
+    uint32 spellId = sPlayerbotSpellCache->GetSpellIdByName(name);
+    if (spellId)
+    {
+        // Use casterGUID filter if checkIsOwner is requested
+        ObjectGuid casterGUID = checkIsOwner ? bot->GetGUID() : ObjectGuid::Empty;
+
+        // GetAuraOfRankedSpell handles all spell ranks automatically
+        Aura* aura = unit->GetAuraOfRankedSpell(spellId, casterGUID);
+        if (aura)
+        {
+            // Check duration if necessary
+            if (checkDuration && aura->GetDuration() == -1)
+                return nullptr;
+
+            // Check stack if necessary
+            if (checkStack != -1 && aura->GetStackAmount() < checkStack)
+                return nullptr;
+
+            return aura;
+        }
+        return nullptr;
+    }
+
+    // Fallback: spell not in cache, use slow path (should be rare)
     std::wstring wnamepart;
     if (!Utf8toWStr(name, wnamepart))
         return nullptr;

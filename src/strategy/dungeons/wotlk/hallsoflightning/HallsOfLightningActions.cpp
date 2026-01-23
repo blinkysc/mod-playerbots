@@ -8,7 +8,7 @@ bool BjarngrimTargetAction::Execute(Event event)
 
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    GuidVector npcs = AI_VALUE(GuidVector, "possible targets");
+    GuidVector npcs = GET_POSSIBLE_TARGETS();
 
     for (auto& npc : npcs)
     {
@@ -20,14 +20,14 @@ bool BjarngrimTargetAction::Execute(Event event)
         }
     }
 
-    Unit* currentTarget = AI_VALUE(Unit*, "current target");
+    Unit* currentTarget = GET_CURRENT_TARGET();
     // There are two, we don't want to ping-pong between them if we're attacking one already
     if (target && currentTarget && currentTarget->GetEntry() == NPC_STORMFORGED_LIEUTENANT)
     {
         return false;
     }
 
-    if (AI_VALUE(Unit*, "current target") == target)
+    if (GET_CURRENT_TARGET() == target)
     {
         return false;
     }
@@ -55,7 +55,7 @@ bool AvoidWhirlwindAction::Execute(Event event)
 bool VolkhanTargetAction::Execute(Event event)
 {
     Unit* boss = AI_VALUE2(Unit*, "find target", "volkhan");
-    if (!boss || AI_VALUE(Unit*, "current target") == boss)
+    if (!boss || GET_CURRENT_TARGET() == boss)
     {
         return false;
     }
@@ -68,7 +68,7 @@ bool StaticOverloadSpreadAction::Execute(Event event)
     float radius = 8.0f;
     float distanceExtra = 2.0f;
 
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     for (auto& member : members)
     {
         if (bot->GetGUID() == member)
@@ -91,7 +91,7 @@ bool BallLightningSpreadAction::Execute(Event event)
     float radius = 6.0f;
     float distanceExtra = 1.0f;
 
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     for (auto& member : members)
     {
         if (bot->GetGUID() == member)

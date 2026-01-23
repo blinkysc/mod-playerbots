@@ -479,7 +479,7 @@ Value<Unit*>* CastTurnUndeadAction::GetTargetValue() { return context->GetValue<
 
 Unit* CastRighteousDefenseAction::GetTarget()
 {
-    Unit* current_target = AI_VALUE(Unit*, "current target");
+    Unit* current_target = GET_CURRENT_TARGET();
     if (!current_target)
     {
         return NULL;

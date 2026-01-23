@@ -9,7 +9,7 @@ bool AttackWebWrapAction::Execute(Event event)
 
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+    GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -20,7 +20,7 @@ bool AttackWebWrapAction::Execute(Event event)
             break;
         }
     }
-    if (!webWrap || AI_VALUE(Unit*, "current target") == webWrap)
+    if (!webWrap || GET_CURRENT_TARGET() == webWrap)
     {
         return false;
     }
@@ -32,7 +32,7 @@ bool WatchersTargetAction::isUseful() { return !botAI->IsHeal(bot); }
 bool WatchersTargetAction::Execute(Event event)
 {
     // Always prioritise web wraps
-    Unit* currTarget = AI_VALUE(Unit*, "current target");
+    Unit* currTarget = GET_CURRENT_TARGET();
     if (currTarget && currTarget->GetEntry() == NPC_WEB_WRAP) { return false; }
 
     // Do not search all units in range!

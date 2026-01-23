@@ -243,7 +243,7 @@ public:
     FerociousBiteTimeTrigger(PlayerbotAI* ai) : Trigger(ai, "ferocious bite time") {}
     bool IsActive() override
     {
-        Unit* target = AI_VALUE(Unit*, "current target");
+        Unit* target = GET_CURRENT_TARGET();
         if (!target)
             return false;
 

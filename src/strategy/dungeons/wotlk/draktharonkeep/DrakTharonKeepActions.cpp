@@ -70,7 +70,7 @@ bool NovosTargetPriorityAction::Execute(Event event)
 
     // TODO: Switch to botAI->Index instead, cleaner
     Player* stairsDps = nullptr;
-    GuidVector members = AI_VALUE(GuidVector, "group members");
+    GuidVector members = GET_GROUP_MEMBERS();
     for (auto& member : members)
     {
         Player* groupMember = botAI->GetPlayer(member);
@@ -99,7 +99,7 @@ bool NovosTargetPriorityAction::Execute(Event event)
     Unit* selectedTargets[2] = {nullptr, nullptr};
     // Target is not findable from threat table using AI_VALUE2(),
     // therefore need to search manually for the unit name
-    GuidVector targets = AI_VALUE(GuidVector, "possible targets no los");
+    GuidVector targets = GET_POSSIBLE_TARGETS_NO_LOS();
 
     for (auto i = targets.begin(); i != targets.end(); ++i)
     {
@@ -160,7 +160,7 @@ bool NovosTargetPriorityAction::Execute(Event event)
         // Attack the first valid target in the priority list
         if (primaryTarget)
         {
-            if (AI_VALUE(Unit*, "current target") != primaryTarget)
+            if (GET_CURRENT_TARGET() != primaryTarget)
             {
                 // bot->Yell(primaryTarget->GetName(), LANG_UNIVERSAL);
                 return Attack(primaryTarget);

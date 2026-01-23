@@ -1679,7 +1679,7 @@ bool BGTactics::Execute(Event event)
             return true;
 
         // NOTE: can't use IsInCombat() when in vehicle as player is stuck in combat forever while in vehicle (ac bug?)
-        bool inCombat = bot->GetVehicle() ? (bool)AI_VALUE(Unit*, "enemy player target") : bot->IsInCombat();
+        bool inCombat = bot->GetVehicle() ? (bool)GET_ENEMY_PLAYER_TARGET() : bot->IsInCombat();
         if (inCombat && !PlayerHasFlag::IsCapturingFlag(bot))
         {
             // bot->GetMotionMaster()->MovementExpired();
@@ -1943,7 +1943,7 @@ bool BGTactics::selectObjective(bool reset)
             // --- Nearby Enemy ---
             if (!BgObjective && urand(0, 99) < 8)
             {
-                if (Unit* enemy = AI_VALUE(Unit*, "enemy player target"))
+                if (Unit* enemy = GET_ENEMY_PLAYER_TARGET())
                 {
                     if (bot->GetDistance(enemy) < 500.0f)
                     {
@@ -2341,7 +2341,7 @@ bool BGTactics::selectObjective(bool reset)
             // --- PRIORITY 1: Nearby enemy (rare aggressive impulse)
             if (urand(0, 99) < 5)
             {
-                if (Unit* enemy = AI_VALUE(Unit*, "enemy player target"))
+                if (Unit* enemy = GET_ENEMY_PLAYER_TARGET())
                 {
                     if (bot->GetDistance(enemy) < 500.0f)
                     {
@@ -2370,7 +2370,7 @@ bool BGTactics::selectObjective(bool reset)
 
             if (!hasValidTarget)
             {
-                if (Unit* enemy = AI_VALUE(Unit*, "enemy player target"))
+                if (Unit* enemy = GET_ENEMY_PLAYER_TARGET())
                 {
                     if (bot->GetDistance(enemy) < 500.0f)
                     {
@@ -2637,7 +2637,7 @@ bool BGTactics::selectObjective(bool reset)
             // --- PRIORITY 3: Random nearby enemy (20%) ---
             if (!foundObjective && urand(0, 99) < 20)
             {
-                if (Unit* enemy = AI_VALUE(Unit*, "enemy player target"))
+                if (Unit* enemy = GET_ENEMY_PLAYER_TARGET())
                 {
                     if (bot->GetDistance(enemy) < 250.0f)
                     {
@@ -3404,7 +3404,7 @@ bool BGTactics::moveToObjectiveWp(BattleBotPath* const& currentPath, uint32 curr
     uint32 const lastPointInPath = reverse ? 0 : ((*currentPath).size() - 1);
 
     // NOTE: can't use IsInCombat() when in vehicle as player is stuck in combat forever while in vehicle (ac bug?)
-    bool inCombat = bot->GetVehicle() ? (bool)AI_VALUE(Unit*, "enemy player target") : bot->IsInCombat();
+    bool inCombat = bot->GetVehicle() ? (bool)GET_ENEMY_PLAYER_TARGET() : bot->IsInCombat();
     if (currentPoint == lastPointInPath || (inCombat && !PlayerHasFlag::IsCapturingFlag(bot)) || !bot->IsAlive())
     {
         // Path is over.
@@ -3707,7 +3707,7 @@ bool BGTactics::atFlag(std::vector<BattleBotPath*> const& vPaths, std::vector<ui
         if (targetFlag)
         {
             // Check for enemy players near the flag using bot's targeting system
-            Unit* enemyPlayer = AI_VALUE(Unit*, "enemy player target");
+            Unit* enemyPlayer = GET_ENEMY_PLAYER_TARGET();
             if (enemyPlayer && enemyPlayer->IsAlive())
             {
                 // If enemy is near the flag, engage them before attempting capture
