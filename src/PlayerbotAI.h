@@ -609,6 +609,7 @@ public:
     NewRpgInfo rpgInfo;
     NewRpgStatistic rpgStatistic;
     std::unordered_set<uint32> lowPriorityQuest;
+    time_t lowPriorityQuestCleanupTime = 0;
     time_t bgReleaseAttemptTime = 0;
 
     // Schedules a callback to run once after <delayMs> milliseconds.

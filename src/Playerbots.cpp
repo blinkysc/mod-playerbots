@@ -430,11 +430,25 @@ public:
             case SMSG_SPELL_FAILURE:
             case SMSG_SPELL_DELAYED:
             case SMSG_EMOTE:
+            case SMSG_TEXT_EMOTE:
             case SMSG_MESSAGECHAT:
             case SMSG_GM_MESSAGECHAT:
             case SMSG_FORCE_MOVE_ROOT:
             case SMSG_FORCE_MOVE_UNROOT:
             case SMSG_MOVE_KNOCK_BACK:
+            case SMSG_LFG_PROPOSAL_UPDATE:
+            case SMSG_LFG_ROLE_CHECK_UPDATE:
+            case SMSG_GROUP_INVITE:
+            case SMSG_GROUP_LIST:
+            case SMSG_GUILD_INVITE:
+            case SMSG_RESURRECT_REQUEST:
+            case SMSG_DUEL_REQUESTED:
+            case SMSG_TRADE_STATUS:
+            case SMSG_LOOT_RESPONSE:
+            case SMSG_LOOT_START_ROLL:
+            case SMSG_BATTLEFIELD_STATUS:
+            case SMSG_ARENA_TEAM_INVITE:
+            case SMSG_PETITION_SHOW_SIGNATURES:
                 break;
             default:
                 return;

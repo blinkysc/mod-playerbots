@@ -593,6 +593,15 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
     if (!CanUpdateAI())
         return;
 
+    // Periodic cleanup of lowPriorityQuest to prevent memory accumulation (every 30 minutes)
+    constexpr time_t LOW_PRIORITY_QUEST_CLEANUP_INTERVAL = 30 * MINUTE;
+    time_t now = time(nullptr);
+    if (now - lowPriorityQuestCleanupTime >= LOW_PRIORITY_QUEST_CLEANUP_INTERVAL)
+    {
+        lowPriorityQuest.clear();
+        lowPriorityQuestCleanupTime = now;
+    }
+
     // Handle the current spell
     Spell* currentSpell = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL);
     if (!currentSpell)
