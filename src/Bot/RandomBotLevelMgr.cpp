@@ -562,7 +562,7 @@ void RandomBotLevelMgr::ProcessFactionDistribution(TeamId team, uint32 totalBots
 // for a pending reset into under-populated ones (per faction, via ProcessFactionDistribution).
 void RandomBotLevelMgr::RunLevelBracketsDistribution()
 {
-    auto const& allPlayers = ObjectAccessor::GetPlayers();
+    auto const allPlayers = ObjectAccessor::GetPlayersSnapshot();
 
     LoadSocialFriendList();
 
@@ -574,9 +574,8 @@ void RandomBotLevelMgr::RunLevelBracketsDistribution()
         uint32 totalAllianceReal = 0;
         uint32 totalHordeReal = 0;
 
-        for (auto const& itr : allPlayers)
+        for (Player* player : allPlayers)
         {
-            Player* player = itr.second;
             if (!player || !player->IsInWorld())
                 continue;
             if (GET_PLAYERBOT_AI(player))
@@ -656,9 +655,8 @@ void RandomBotLevelMgr::RunLevelBracketsDistribution()
     std::vector<int> hordeActualCounts(_numRanges, 0);
     std::vector<std::vector<Player*>> hordeBotsByRange(_numRanges);
 
-    for (auto const& itr : allPlayers)
+    for (Player* player : allPlayers)
     {
-        Player* player = itr.second;
         if (!player || !player->IsInWorld())
             continue;
         if (!sRandomPlayerbotMgr.IsRandomBot(player))
@@ -876,10 +874,9 @@ void RandomBotLevelMgr::RunResetPlayedTimeCheck()
 {
     LOG_DEBUG("playerbots", "[RandomBotLevelMgr] OnUpdate: Starting time-based reset check...");
 
-    auto const& allPlayers = ObjectAccessor::GetPlayers();
-    for (auto const& itr : allPlayers)
+    auto const allPlayers = ObjectAccessor::GetPlayersSnapshot();
+    for (Player* candidate : allPlayers)
     {
-        Player* candidate = itr.second;
         if (!candidate || !candidate->IsInWorld())
             continue;
         if (!sRandomPlayerbotMgr.IsRandomBot(candidate))
